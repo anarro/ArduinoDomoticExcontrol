@@ -1,37 +1,60 @@
+// BOF preprocessor bug prevent - insert me on top of your arduino-code
+// From: http://www.a-control.de/arduino-fehler/?lang=en
+#if 1
+__asm volatile ("nop");
+#endif
+//Enable watch dog
+//habilita perro guardian
+
+#define ENABLE_WATCH_DOG;
+#ifdef ENABLE_WATCH_DOG
+  #include <avr/wdt.h>
+#endif 
+
 #include <SPI.h>         // needed for Arduino versions later than 0018
 #include <Ethernet.h>
 #include <EthernetUdp.h>         // UDP library from: bjoern@cs.stanford.edu 12/30/2008
 #include <EEPROM.h>
+#include <SD.h>
 #include <Wire.h>
-#include <avr/wdt.h>
 #define UDP_TX_PACKET_MAX_SIZE 340 //increase UDP size
 #define DS_RTC 0x68  //Direccion Reloj
+//****************************************************//CONFIGURACION EQUIPOS INTALADOS, TERMOSTATOS, ENCHUFES RADIOFRECUENCIA 433MHZ, INFARROJOS.
+//EQUIPMENT CONFIGURATION , THERMOSTAT, RADIO 433MHZ, INFARROJOS.
 
 
-#define THERMOSTAT_DS18B20_NUMBER 1
-#define ENABLED_IR_LED true
-#define ENABLED_IR_RECIVE true
-
-#if (THERMOSTAT_DS18B20_NUMBER>0)
-  #include <OneWire.h>
-  #include <DallasTemperature.h>
-  #define ONE_WIRE_BUS 3           //Pin one wire donde estan conectadas las sondas
-#endif 
+#define DEBUG_MODE  //Send information  by serial port 
+//#define LED_IR 
+//#define IR_RECIVE 
+//#define THERMOSTAT_DS18B20_NUMBER 1 //Set thermostat number
 
 
-#if (ENABLED_IR_LED)
+
+
+/***********************************************************************************************************************/
+/***********************************************************************************************************************/
+/***********************************************************************************************************************/
+/***********************************************************************************************************************/
+
+//
+#ifdef LED_IR  
   #include <IRremote.h>
   IRsend irsend;
 #endif 
 
-#if (ENABLED_IR_RECIVE)
-  #include <IRremote.h>
+#ifdef IR_RECIVE
+  #ifndef LED_IR
+    #include <IRremote.h>
+  #endif
   IRrecv irrecv(19);//El 19 corresponde con el pin de arduino, cambiar para utilizar otro
   decode_results results;
 #endif 
 
-#if (THERMOSTAT_DS18B20_NUMBER>0)
-  DeviceAddress Ds18B20Addres1 = { 0x28, 0x2B, 0x7D, 0x54, 0x05, 0x00, 0x00, 0x32};
+#ifdef THERMOSTAT_DS18B20_NUMBER
+  #include <OneWire.h>
+  #include <DallasTemperature.h>
+  #define ONE_WIRE_BUS 3           //Pin one wire donde estan conectadas las sondas
+  DeviceAddress Ds18B20Addres1 = { 0x28, 0xAB, 0x2A, 0x46, 0x04, 0x00, 0x00, 0x88};//28AB2A4604000088
   DeviceAddress Ds18B20Addres2 = { 0x28, 0x8C, 0x7A, 0x5D, 0x04, 0x00, 0x00, 0x82};
   DeviceAddress Ds18B20Addres3 = { 0x28, 0x4E, 0x66, 0x58, 0x05, 0x00, 0x00, 0x04};
   
@@ -40,7 +63,10 @@
   DallasTemperature sensorTemp(&oneWire);// Pass our oneWire reference to Dallas Temperature. 
   unsigned int ThermostatAC[THERMOSTAT_DS18B20_NUMBER];
   unsigned int ThermostatAH[THERMOSTAT_DS18B20_NUMBER];
+  
+  
 #endif 
+
 
 /***********************************************************************************************************************/
 /***********************************************************************************************************************/
@@ -106,7 +132,7 @@ const boolean SecureConnection=false;  // ENABLED SECURE CONNECTION = TRUE.... C
 
 // Set or reset watchdog
 //Activa o desactiva perro guardian
-const boolean EnabledWatchdog=true;
+
 
 /***********************************************************************************************************************/
 /***********************************************************************************************************************/
@@ -140,7 +166,8 @@ unsigned long LastTimeInput[Number_Input];  //Ultima vez que la entrada estaba e
 byte InState[Number_Input];  //Estado Entrada
 
 //Registros Salidas Circuitos
-byte ElectricalCircuitValue[30];
+byte ElectricalCircuitValue[30]={0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
+byte OldEcValue[30]={0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
 float Temperatura[]={22.2,22.4,22.6};
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -164,7 +191,8 @@ boolean InDowPersiana[NumeroPersianas];  //Boleana pulsador bajada Persiana
 boolean Condicionados[10];              //Guarda el estado de los condicionados
 byte Consignas[10];                     //Guarda el valor de las consignas
 
-
+boolean SdOk=true;
+File SdFile;
 /***********************************************************************************************************************/
 /***********************************************************************************************************************/
 /***********************************************************************************************************************/
@@ -174,8 +202,14 @@ byte Consignas[10];                     //Guarda el valor de las consignas
 
 /******************************************************************************************************************************/
 void setup() {
+  
+  //ACTIVAR ESTA LINEA LA PRIMERA VEZ QUE EJECUTAS PARA INICIAR EEPROM
+  //LUEGO BORRAR!!!!
+  for(int c=0;c<30;c++)EEPROM.write(900+c,0);
+  #ifdef DEBUG_MODE   
+   Serial.begin(9600);                   
+  #endif
 
-  Serial.begin(9600);
   SystemSetup();//Dont remove this line, no elimines esta linea
   //si estas usando receptor infrarrojos Reinicialo
   //if you are using infrared receiver restart it  
@@ -183,15 +217,11 @@ void setup() {
 }
 void loop(){
 
-   SystemLoop();//Dont remove this line, no elimines esta linea
-}
+   SystemLoop();//Dont remove this line, no elimines esta linea   
+ }
 void Loop30Sg(){
 //Este evento se produce cada 30sg.
 //This event occurs every 30SG.
-  
-  //on if temperature control
-  //Activar RefreshTemperature con termostatos
-  //RefreshTemperature()
 
 }
 /******************************************************************************************************************************/
@@ -217,7 +247,10 @@ void Loop30Sg(){
 /***********************************************************************************************************************/
 /***********************************************************************************************************************/
 void SwicthStateChange(int NumberInput){
-  //Serial.println(NumberInput);
+  #ifdef DEBUG_MODE   
+   Serial.println(NumberInput);                 
+  #endif
+
     /*****************************************************************/
   //Este evento se produce cuando un conmutador cambia posicion
   // This event occurs with swicth change state.
@@ -228,10 +261,14 @@ void SwicthStateChange(int NumberInput){
 
   //Ado Circuito numero 3 (Conmutador )
    if (NumberInput==0){if (ElectricalCircuitValue[2]==1){ElectricalCircuitValue[2]=0;}else{ElectricalCircuitValue[2]=1;}}
-   //Ado Circuito numero 4  (Interruptor)
+
    if (NumberInput==1){if (ElectricalCircuitValue[3]==1){ElectricalCircuitValue[3]=0;}else{ElectricalCircuitValue[3]=1;}}
 }
 void ShortInput(int NumberInput){
+  #ifdef DEBUG_MODE   
+   Serial.print("Short Input End");Serial.println(NumberInput);                
+  #endif
+  
   /*****************************************************************/
   //Este evento se produce con una pulsación corta.
   // This event occurs with a short press.
@@ -281,6 +318,10 @@ void ShortInput(int NumberInput){
 
 }
 void LongInputEnd(int NumberInput){
+  #ifdef DEBUG_MODE   
+    Serial.print("Long Input End");Serial.println(NumberInput);                 
+  #endif
+  
   /*****************************************************************/
   //FINAL DE PULSACION LARGA
   //LONG PRESS END, EVENT
@@ -300,6 +341,10 @@ void LongInputEnd(int NumberInput){
   
 }
 void LongInput(int NumberInput){
+  #ifdef DEBUG_MODE   
+    Serial.print("Long Input Start");Serial.println(NumberInput);                
+  #endif
+ 
   /*****************************************************************/
   //EVENTO PRODUCINO AL INICIO DE UNA PULSACION LARGA
   // LONG PRESS START
@@ -469,17 +514,20 @@ void OutControl()
 char* RunCommand(byte CommandNumber){
   //Este evento se produce cuando se ejecuta un comando desde el app
   //This event occurs when a command is executed from the app
- //Serial.print("Command Nª");
- //Serial.println(CommandNumber); 
- 
- 
+   #ifdef DEBUG_MODE   
+    Serial.print("Command Nª");Serial.println(CommandNumber);               
+  #endif
+
+
  return "COMPLETED";
 }
 void CommonOrders(byte CommandNumber){
   //Este evento se produce cuando se ejecuta un comando desde el app
   //This event occurs when a command is executed from the app
- Serial.print("Command Nª");
- Serial.println(CommandNumber); 
+  
+  #ifdef DEBUG_MODE   
+    Serial.println(CommandNumber);Serial.println(CommandNumber);             
+  #endif
 }
 char* ReadSensor(byte NumeroSensor)
 {
@@ -491,115 +539,4 @@ char* ReadSensor(byte NumeroSensor)
   if (NumeroSensor==2){return "60";}
   return "RESERVA"; 
 }
-
-/*****************************************************************************************/
-/*****************************************************************************************
-Funcion de Recepcion de infrarrojos por mando a distancia.
-Puedes seleccionar escenas.
-Puedes mover persianas
-Adaptando el codigo a tu mando a distancia
-
-Receiving function infrared remote control.
-You can select scenes.
-You can move blinds
-Adapting the code to your remote
-
-DONWLOAD LIBRARY...DESCARGA
-https://github.com/shirriff/Arduino-IRremote
-************************************************************************************************/
-/************************************************************************************************/
-#if (ENABLED_IR_RECIVE)
-void RecepcionInfrarrojos(decode_results *results) {
-  
-
- if (results->decode_type == NEC) {
-   //En este caso es nec pero puede ser JVC, PANASONIC...
-   //Tienes que adaptarlo a tu mando a distancia
-   switch (results->value){
-    case  0x40BFA05F://cambia el codigo por el que envio tu mando a distancia
-      SelectScene(1);
-      break;
-      
-    case  0x40BF609F://cambia el codigo por el que envio tu mando a distancia
-      SelectScene(2);
-      break;
-    
-    case  0x40BFE01F://cambia el codigo por el que envio tu mando a distancia
-      SelectScene(3);
-      break;
-    case  0x40BF906F://cambia el codigo por el que envio tu mando a distancia
-      SelectScene(4);
-      break;  
-      
-    case  0x40BF50AF://cambia el codigo por el que envio tu mando a distancia
-      SelectScene(5);
-      break;  
-          
-    case  0x40BFD02F://cambia el codigo por el que envio tu mando a distancia
-      SelectScene(6);
-      break;  
-     
-    case  0x40BFB04F://cambia el codigo por el que envio tu mando a distancia
-      SelectScene(7);
-      break;  
-      
-    case  0x40BF708F://cambia el codigo por el que envio tu mando a distancia
-      SelectScene(8);
-      break;  
-    
-    case  0x40BFF00F://cambia el codigo por el que envio tu mando a distancia
-      SelectScene(9);
-      break;  
-      
-    case  0x40BF8877://cambia el codigo por el que envio tu mando a distancia
-      SelectScene(10);
-      break;  
-   
-   //Subir 20% Persiana 1
-    case  0x40BFB847://cambia el codigo por el que envio tu mando a distancia 
-      if (ElectricalCircuitValue[23]<=80){ElectricalCircuitValue[23]+=20;}else{ElectricalCircuitValue[23]=100;}
-      break;  
-    //bajar 20% Persiana 1
-    case  0xC03F807F://cambia el codigo por el que envio tu mando a distancia
-      if (ElectricalCircuitValue[23]>=20){ElectricalCircuitValue[23]-=20;}else{ElectricalCircuitValue[23]=0;}
-      break;  
-    //Subir 20% Persiana 2  
-    case  0x40BF38C7://cambia el codigo por el que envio tu mando a distancia
-      if (ElectricalCircuitValue[24]<=80){ElectricalCircuitValue[24]+=20;}else{ElectricalCircuitValue[24]=100;}
-      break;  
-    //bajar 20% Persiana 2
-    case  0xC03F00FF://cambia el codigo por el que envio tu mando a distancia
-      if (ElectricalCircuitValue[24]>=20){ElectricalCircuitValue[24]-=20;}else{ElectricalCircuitValue[24]=0;}
-      break; 
-     
-   }  
-  }  
-}
-#endif 
-/***********************************************************************************
-Funcion de Envio de infrarrojos por mando a distancia.
-Puedes manejar numerosos dispositvos controlados por infrarrojo
-
-Delivery function of infrared remote control.
-You can manage many enabled devices controlled by infrared
-DONWLOAD LIBRARY...DESCARGA
-https://github.com/shirriff/Arduino-IRremote
-************************************************************************************************/
-#if (ENABLED_IR_LED)
-void SendIr(byte CommandNumber){
-    //Turnf off lg tv
-    //Apagar tv lg
-     switch (CommandNumber) {
-    case 1:    
-      irsend.sendNEC(0x20DF10EF, 32); 
-      delay(40);      
-   
-     } 
-   
-  //si estas usando receptor infrarrojos Reinicialo
-  //if you are using infrared receiver restart it  
- //irrecv.enableIRIn(); // Re-enable receiver
-}
-#endif 
-
 

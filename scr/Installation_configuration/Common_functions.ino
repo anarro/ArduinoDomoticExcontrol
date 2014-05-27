@@ -1,17 +1,18 @@
 
 void SystemSetup(){
 // Inico Ethernet y UDP
-  wdt_disable();
+ 
+  
+  boolean CargaSdOk=false;
   Ethernet.begin(mac,ip);
   Udp.begin(localPort);
   
+  
+   
   //Inicio control Horarios
   Wire.begin();
   CargaHora();
 
-  //Iniciamos Entradas Salidas
-  for (int i =0; i<30; i++){ElectricalCircuitValue[i]=0;}
-  
   //Fijamos pines entrada salida
   unsigned long currenMillis = millis();
   for (int i=0; i<Number_Input;i++){pinMode(PinInput[i], INPUT);LastTimeInput[i]=currenMillis;InState[i]=0;}
@@ -19,39 +20,112 @@ void SystemSetup(){
   for (int i=0; i<10;i++){Consignas[i]=EEPROM.read(940 + i);}
   int reading;
   for (int i=0; i<Number_SwicthInput;i++){pinMode(PinSwicthInput[i], INPUT);reading = digitalRead(PinSwicthInput[i]);LastTimeSwicthInput[i]=millis();SwicthState[i]=reading;}
-  
-  //Fijamos Temp.  Consigna en Inicio
-  ElectricalCircuitValue[20]=20;
-  ElectricalCircuitValue[21]=20;
-  ElectricalCircuitValue[22]=20;
-  
-
-  
   //Fijamo valores y posicion inicio persianas
   //Fijamos el tiempo de subida bajada Persianas
  //Se encuentran apartir de la direccion 3880 
  //
  ReiniciarTiempoPersianas();
+ /*
+  pinMode(53, OUTPUT);
+  
+  // initialize SD card
+    if (DEBUG_MODE){Serial.println("Initializing SD card...");}
+    if (!SD.begin(4)) {
+        if (DEBUG_MODE){Serial.println("ERROR - SD card initialization failed!");}
+        SdOk=false;
+    }else{if (DEBUG_MODE){Serial.println("SUCCESS - SD card initialized.");}}
+    
+    
+  if (SdOk){
+      //Log File
+     if (!SD.exists("log.txt")) {
+          SdFile = SD.open("log.txt");
+          String Log= "Start at " + ((String)hour) + ":" +((String)minute) + " - " +((String)dayOfMonth) + "/"+((String)month) + "/"+((String)year) + "/";
+          SdFile.println(Log);
+          SdFile.close();
+      }
+      if (!SD.exists("ElectricalCircuitValue.txt")) {
+          SdFile = SD.open("ElectricalCircuitValue.txt");
+          if (SdFile) {int c=0; while (SdFile.available()) {if (c<=30)ElectricalCircuitValue[c]=SdFile.read();}}
+          SdFile.close();
+          CargaSdOk=true;
+        }
+      else{ 
+        if (DEBUG_MODE){Serial.println("ERROR - Found file.");}
+          //Fijamos Temp.  Consigna en Inicio
+        //Iniciamos Entradas Salidas
+        ElectricalCircuitValue[20]=20;
+        ElectricalCircuitValue[21]=20;
+        ElectricalCircuitValue[22]=20;
+      }
+   }
+   
+   if(CargaSdOk){
+     //Subimos las persianas a iniciar para ajustar posicion
+     for (int per=0; per<NumeroPersianas; per++){
+       CargaPosicionPersiana(per);
+       InDowPersiana[per]=false;
+       InUpPersiana[per]=false;
+     }   
+   }
+     else{
+    //Subimos las persianas a iniciar para ajustar posicion
+     for (int per=0; per<NumeroPersianas; per++){
+       ReiniciarPosicionPersiana(per);
+       InDowPersiana[per]=false;
+       InUpPersiana[per]=false;
+     }
+   }
+  */
+  
+  
+  
+  for (int c=0;c<30;c++){ ElectricalCircuitValue[c]=EEPROM.read(900+c);}
+  
+   ElectricalCircuitValue[20]=20;
+   ElectricalCircuitValue[21]=20;
+   ElectricalCircuitValue[22]=20;
+  for (int per=0; per<NumeroPersianas; per++){
+       CargaPosicionPersiana(per);
+       InDowPersiana[per]=false;
+       InUpPersiana[per]=false;
+     }
 
- //Subimos las persianas a iniciar para ajustar posicion
- for (int per=0; per<NumeroPersianas; per++){
-   ReiniciarPosicionPersiana(per);
-   InDowPersiana[per]=false;
-   InUpPersiana[per]=false;
- }
+ 
  //Iniciamos perro guardian
- if(EnabledWatchdog){wdt_enable(WDTO_8S );}
+ #ifdef THERMOSTAT_DS18B20_NUMBER
+   InitDS18B20();
+ #endif 
+ #ifdef ENABLE_WATCH_DOG
+   wdt_enable(WDTO_8S );
+ #endif 
+
 
 }
 void SystemLoop(){
-    if(millis() < LastMsg ) {CargaHora();}
-   if((millis() - LastMsg) >= 30000) {Loop30Sg();CargaHora();if (EspRfrIp<1){connectAndRfr();EspRfrIp=120;}else{EspRfrIp--;}}
+  #ifdef IR_RECIVE   
+    ComprobarInfrarro();
+  #endif 
+   
+   if(millis() < LastMsg ) {CargaHora();}
+   if((millis() - LastMsg) >= 30000) {
+  
+     #ifdef THERMOSTAT_DS18B20_NUMBER   
+       RefreshTemperature();
+     #endif
+     SecutityCopy();Loop30Sg();CargaHora();
+     if (EspRfrIp<1){connectAndRfr();EspRfrIp=120;}else{EspRfrIp--;}
+   }
+   
    RecepcionPaqueteUDP();
    InputState();
    CheckSwicth();
    for (int p =0; p<NumeroPersianas;p++){GestionMovPersianas(p);} //Control de movimiento persianas
    OutControl();
-   if(EnabledWatchdog){wdt_reset();}
+   #ifdef ENABLE_WATCH_DOG
+    wdt_reset();
+   #endif 
+
 }
 void CheckSwicth(){
   int reading;
@@ -126,6 +200,8 @@ void SubirPersiana(int NPersiana){
   }  
   TiempoMovPersiana[NPersiana]=TiempoActual;
 }
+
+   
 void BajarPersiana(int NPersiana){
   if (OutUpPersiana[NPersiana]==true){SubirPersiana(NPersiana);OutUpPersiana[NPersiana]=false;OutControl();delay(200);}
   long TiempoActual = micros();
@@ -145,6 +221,12 @@ void BajarPersiana(int NPersiana){
 void ReiniciarTiempoPersianas(){for ( int c =0; c<NumeroPersianas; c++){TimUpPersiana[c]=(EEPROM.read(3880 + c))* 1000000; TimDowPersiana[c]=(EEPROM.read(3890 + c))* 1000000;}}
 void ReiniciarPosicionPersiana(int NumPersiana){ TiempoPosPersianaUp[NumPersiana]=0;TiempoPosPersianaDown[NumPersiana]=TimDowPersiana[NumPersiana];ElectricalCircuitValue[23+NumPersiana]=100;}
 
+void CargaPosicionPersiana(int NPersiana){
+  PosicionPersiana[NPersiana]=ElectricalCircuitValue[23+NPersiana];
+  byte porcentajeBajada=100-PosicionPersiana[NPersiana];
+  TiempoPosPersianaDown[NPersiana]=porcentajeBajada*(TimDowPersiana[NPersiana]/100);
+  TiempoPosPersianaUp[NPersiana]=PosicionPersiana[NPersiana]*(TimUpPersiana[NPersiana]/100);
+}
  
 void RecepcionPaqueteUDP()
 {
@@ -402,6 +484,7 @@ void RecepcionPaqueteUDP()
        return;
     } 
      if (CadenaIn.indexOf("RESTPER")>-1){
+        ReiniciarTiempoPersianas();
         ReiniciarPosicionPersiana(packetBuffer[7]-1);
         EnviarRespuesta("RESETEANDO PERSIANA");
         return;
@@ -637,6 +720,9 @@ void RfIp(){
       Reintento++;
       RecepcionPaqueteUDP();
       InputState();
+      #ifdef ENABLE_WATCH_DOG
+        wdt_reset();
+      #endif 
       for (int p =0; p<NumeroPersianas;p++){GestionMovPersianas(p);} //Control de movimiento persianas
       OutControl();
       delay(10);
@@ -648,7 +734,30 @@ void RfIp(){
     }
   }
 }
-#if (THERMOSTAT_DS18B20_NUMBER>0)
+void SecutityCopy(){
+  boolean Exit=true;
+  
+  for (int c=0;c<=30;c++){ if (ElectricalCircuitValue[c]!=OldEcValue[c]){OldEcValue[c]=ElectricalCircuitValue[c];Exit=false; }}
+  if (Exit==false){for (int c=0;c<30;c++){EEPROM.write(900+c,ElectricalCircuitValue[c]);}}
+  return;
+/*  boolean Exit=true;
+  for (int c=0;c<=30;c++){
+    if (ElectricalCircuitValue[c]!=OldEcValue[c]){Exit=false; } 
+  }
+  if (Exit){return;}
+  if (SD.exists("ElectricalCircuitValue.txt")) {SD.remove("ElectricalCircuitValue.txt");} 
+  File dataFile = SD.open("ElectricalCircuitValue.txt");
+  if (dataFile) {
+    while (dataFile.available()) {
+      for (int c=0;c=30;c++){dataFile.write(ElectricalCircuitValue[c]);}
+    }
+    dataFile.close();
+  }  
+  // 
+  else { if (DEBUG_MODE){Serial.println("error opening datalog.txt");}}*/
+}
+
+#ifdef THERMOSTAT_DS18B20_NUMBER
   void InitDS18B20(){
       sensorTemp.begin();
       sensorTemp.setResolution(Ds18B20Addres1, TEMPERATURE_PRECISION);
@@ -666,7 +775,7 @@ void RfIp(){
      
      // Heating Zone 
      for (int c=0;c<THERMOSTAT_DS18B20_NUMBER;c++){
-       if (ElectricalCircuitValue[17+1]==1){
+       if (ElectricalCircuitValue[17+c]==1){
           //Calefacción encendida comprobar histeresis
           //Heating on, test temperature
           float RangoTemp =((float) ElectricalCircuitValue[20+c]) + 0.7;
@@ -686,17 +795,18 @@ void RfIp(){
         
         //aire acondicionado ON comprobar histeresis
           //AC on, test temperature
-          float RangoTemp =((float) ElectricalCircuitValue[17+c]) + 0.7;
-          if (Temperatura[0]   >= RangoTemp )ThermostatAC[c]=HIGH;}
+         if (ElectricalCircuitValue[14+c]==1){
+          float RangoTemp =((float) ElectricalCircuitValue[20+c]) + 0.7;
+          if (Temperatura[0]   >= RangoTemp ){ThermostatAC[c]=HIGH;}
           else  
           {  
             RangoTemp = RangoTemp - 1.4;
             if (Temperatura[0] <= RangoTemp){ThermostatAC[c]=LOW;}
-          }
-        }
-        else{ThermostatAC[c]=LOW;}
-     } 
-     sensorTemp.requestTemperatures();
+          }         
+        
+     }else{ThermostatAC[c]=LOW;} 
    }
+   sensorTemp.requestTemperatures();
+     }
 #endif 
 
