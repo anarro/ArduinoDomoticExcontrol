@@ -16,80 +16,90 @@ https://github.com/shirriff/Arduino-IRremote
 ************************************************************************************************/
 /************************************************************************************************/
 #ifdef IR_RECIVE
+
+
 void ComprobarInfrarro() {
-  if (irrecv.decode(&results)) {
+  
+  if (irrecv.decode(&results)){            
      //RecepcionInfrarrojos(&results);
-     irrecv.resume(); // Receive the next value
+     int codeType = -1; // The type of code
+     decode_results *result;
+     result=&results;
+     codeType = result->decode_type;
+     
+     if (codeType == NEC) {
+       //En este caso es nec pero puede ser JVC, PANASONIC...
+       //Tienes que adaptarlo a tu mando a distancia
+       switch (result->value){
+        case  0x40BFA05F://cambia el codigo por el que envio tu mando a distancia
+          SelectScene(1);
+          break;
+          
+        case  0x40BF609F://cambia el codigo por el que envio tu mando a distancia
+          SelectScene(2);
+          break;
+        
+        case  0x40BFE01F://cambia el codigo por el que envio tu mando a distancia
+          SelectScene(3);
+          break;
+        case  0x40BF906F://cambia el codigo por el que envio tu mando a distancia
+          SelectScene(4);
+          break;  
+          
+        case  0x40BF50AF://cambia el codigo por el que envio tu mando a distancia
+          SelectScene(5);
+          break;  
+              
+        case  0x40BFD02F://cambia el codigo por el que envio tu mando a distancia
+          SelectScene(6);
+          break;  
+         
+        case  0x40BFB04F://cambia el codigo por el que envio tu mando a distancia
+          SelectScene(7);
+          break;  
+          
+        case  0x40BF708F://cambia el codigo por el que envio tu mando a distancia
+          SelectScene(8);
+          break;  
+        
+        case  0x40BFF00F://cambia el codigo por el que envio tu mando a distancia
+          SelectScene(9);
+          break;  
+          
+        case  0x40BF8877://cambia el codigo por el que envio tu mando a distancia
+          SelectScene(10);
+          break;  
+       
+       //Subir 20% Persiana 1
+        case  0x40BFB847://cambia el codigo por el que envio tu mando a distancia 
+          if (ElectricalCircuitValue[23]<=80){ElectricalCircuitValue[23]+=20;}else{ElectricalCircuitValue[23]=100;}
+          break;  
+        //bajar 20% Persiana 1
+        case  0xC03F807F://cambia el codigo por el que envio tu mando a distancia
+          if (ElectricalCircuitValue[23]>=20){ElectricalCircuitValue[23]-=20;}else{ElectricalCircuitValue[23]=0;}
+          break;  
+        //Subir 20% Persiana 2  
+        case  0x40BF38C7://cambia el codigo por el que envio tu mando a distancia
+          if (ElectricalCircuitValue[24]<=80){ElectricalCircuitValue[24]+=20;}else{ElectricalCircuitValue[24]=100;}
+          break;  
+        //bajar 20% Persiana 2
+        case  0xC03F00FF://cambia el codigo por el que envio tu mando a distancia
+          if (ElectricalCircuitValue[24]>=20){ElectricalCircuitValue[24]-=20;}else{ElectricalCircuitValue[24]=0;}
+          break; 
+         
+       }  
+      }  
+     
+     
+     
+     
+     irrecv.resume(); // Receive the next value.
+     
    }
 }
-/*
-void RecepcionInfrarrojos(decode_results *results) {
-  
 
- if (results->decode_type == NEC) {
-   //En este caso es nec pero puede ser JVC, PANASONIC...
-   //Tienes que adaptarlo a tu mando a distancia
-   switch (results->value){
-    case  0x40BFA05F://cambia el codigo por el que envio tu mando a distancia
-      SelectScene(1);
-      break;
-      
-    case  0x40BF609F://cambia el codigo por el que envio tu mando a distancia
-      SelectScene(2);
-      break;
-    
-    case  0x40BFE01F://cambia el codigo por el que envio tu mando a distancia
-      SelectScene(3);
-      break;
-    case  0x40BF906F://cambia el codigo por el que envio tu mando a distancia
-      SelectScene(4);
-      break;  
-      
-    case  0x40BF50AF://cambia el codigo por el que envio tu mando a distancia
-      SelectScene(5);
-      break;  
-          
-    case  0x40BFD02F://cambia el codigo por el que envio tu mando a distancia
-      SelectScene(6);
-      break;  
-     
-    case  0x40BFB04F://cambia el codigo por el que envio tu mando a distancia
-      SelectScene(7);
-      break;  
-      
-    case  0x40BF708F://cambia el codigo por el que envio tu mando a distancia
-      SelectScene(8);
-      break;  
-    
-    case  0x40BFF00F://cambia el codigo por el que envio tu mando a distancia
-      SelectScene(9);
-      break;  
-      
-    case  0x40BF8877://cambia el codigo por el que envio tu mando a distancia
-      SelectScene(10);
-      break;  
-   
-   //Subir 20% Persiana 1
-    case  0x40BFB847://cambia el codigo por el que envio tu mando a distancia 
-      if (ElectricalCircuitValue[23]<=80){ElectricalCircuitValue[23]+=20;}else{ElectricalCircuitValue[23]=100;}
-      break;  
-    //bajar 20% Persiana 1
-    case  0xC03F807F://cambia el codigo por el que envio tu mando a distancia
-      if (ElectricalCircuitValue[23]>=20){ElectricalCircuitValue[23]-=20;}else{ElectricalCircuitValue[23]=0;}
-      break;  
-    //Subir 20% Persiana 2  
-    case  0x40BF38C7://cambia el codigo por el que envio tu mando a distancia
-      if (ElectricalCircuitValue[24]<=80){ElectricalCircuitValue[24]+=20;}else{ElectricalCircuitValue[24]=100;}
-      break;  
-    //bajar 20% Persiana 2
-    case  0xC03F00FF://cambia el codigo por el que envio tu mando a distancia
-      if (ElectricalCircuitValue[24]>=20){ElectricalCircuitValue[24]-=20;}else{ElectricalCircuitValue[24]=0;}
-      break; 
-     
-   }  
-  }  
-}*/
-#endif */
+#endif 
+
 /***********************************************************************************
 Funcion de Envio de infrarrojos por mando a distancia.
 Puedes manejar numerosos dispositvos controlados por infrarrojo
@@ -100,7 +110,7 @@ DONWLOAD LIBRARY...DESCARGA
 https://github.com/shirriff/Arduino-IRremote
 ************************************************************************************************/
 
-#if (ENABLED_IR_RECIVE)
+#ifdef LED_IR
 
 void SendIr(byte CommandNumber){
     //Example  lg tv
@@ -219,8 +229,9 @@ void SendIr(byte CommandNumber){
       delay(40);
       break;   
      }   
- irrecv.enableIRIn(); // Re-enable receiver
- 
+ #ifdef IR_RECIVE
+   irrecv.enableIRIn(); // Re-enable receiver
+ #endif 
 }
 #endif 
 

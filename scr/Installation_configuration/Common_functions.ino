@@ -1,8 +1,4 @@
-
 void SystemSetup(){
-// Inico Ethernet y UDP
- 
-  
   boolean CargaSdOk=false;
   Ethernet.begin(mac,ip);
   Udp.begin(localPort);
@@ -91,11 +87,16 @@ void SystemSetup(){
        InUpPersiana[per]=false;
      }
 
- 
+ #ifdef RECEIVER_433  
+    Init433Mhz();// Receiver on inerrupt 0 => that is pin #2
+ #endif
  //Iniciamos perro guardian
  #ifdef THERMOSTAT_DS18B20_NUMBER
    InitDS18B20();
  #endif 
+  #ifdef IR_RECIVE
+   irrecv.enableIRIn();
+ #endif
  #ifdef ENABLE_WATCH_DOG
    wdt_enable(WDTO_8S );
  #endif 
@@ -106,6 +107,10 @@ void SystemLoop(){
   #ifdef IR_RECIVE   
     ComprobarInfrarro();
   #endif 
+  
+  #ifdef RECEIVER_433  
+      Recepcion433Mhz();
+   #endif
    
    if(millis() < LastMsg ) {CargaHora();}
    if((millis() - LastMsg) >= 30000) {
@@ -248,7 +253,19 @@ void RecepcionPaqueteUDP()
     CadenaEntrada[LongCadena-1]='\0';
     String CadenaIn = (String)CadenaEntrada;
     if (CadenaIn.indexOf("COMCOMM")>-1){CommonOrders(packetBuffer[7]);EnviarRespuesta("COMCOMOK");return;}
-    if (CadenaIn=="CLEARHORARIO"){for (int i = 950; i <= 3879; i++){EEPROM.write(i, 66);}EnviarRespuesta("HORARIOS BORRADOS"); return;}
+    if (CadenaIn=="CLEARHORARIO"){ 
+       #ifdef ENABLE_WATCH_DOG
+          wdt_reset();
+       #endif 
+      for (int i = 950; i <= 3879; i++){EEPROM.write(i, 66);
+        #ifdef ENABLE_WATCH_DOG
+          if (i==2500){wdt_reset();}
+       #endif 
+      }
+      EnviarRespuesta("HORARIOS BORRADOS"); return;}
+
+
+      
     if (CadenaIn=="CLEARESPCDAY"){for (int i = 3900; i <= 3999; i++){EEPROM.write(i, 0);}EnviarRespuesta("DIAS ESPECIALES BORRADOS");return; }
     if (CadenaIn.indexOf("SETFH")>-1){
       setDateDs1307(packetBuffer[5] ,packetBuffer[6], packetBuffer[7], packetBuffer[8], packetBuffer[9], packetBuffer[10], packetBuffer[11]);

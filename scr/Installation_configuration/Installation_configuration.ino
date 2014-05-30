@@ -6,7 +6,7 @@ __asm volatile ("nop");
 //Enable watch dog
 //habilita perro guardian
 
-#define ENABLE_WATCH_DOG;
+//#define ENABLE_WATCH_DOG;  //Solo utilizar con arduino original1!!!!
 #ifdef ENABLE_WATCH_DOG
   #include <avr/wdt.h>
 #endif 
@@ -27,7 +27,8 @@ __asm volatile ("nop");
 //#define LED_IR 
 //#define IR_RECIVE 
 //#define THERMOSTAT_DS18B20_NUMBER 1 //Set thermostat number
-
+//#define TRANSMITER_433
+//#define RECEIVER_433
 
 
 
@@ -37,15 +38,20 @@ __asm volatile ("nop");
 /***********************************************************************************************************************/
 
 //
+#ifdef RECEIVER_433
+  #include <RCSwitch.h>
+#endif
+
 #ifdef LED_IR  
   #include <IRremote.h>
   IRsend irsend;
 #endif 
 
 #ifdef IR_RECIVE
-  #ifndef LED_IR
+ #ifndef LED_IR
     #include <IRremote.h>
   #endif
+
   IRrecv irrecv(19);//El 19 corresponde con el pin de arduino, cambiar para utilizar otro
   decode_results results;
 #endif 
@@ -66,6 +72,9 @@ __asm volatile ("nop");
   
   
 #endif 
+#ifdef RECEIVER_433
+  RCSwitch mySwitch = RCSwitch();
+#endif
 
 
 /***********************************************************************************************************************/
@@ -98,15 +107,15 @@ const boolean Enable_DaylightSavingTime  = true;
 
 //Numero de Entradas con conmutador
 //Number of swicth Inputs
- byte PinSwicthInput[] = {39, 41};
+ byte PinSwicthInput[] = {};
 
 //Define pines de Entradas
 //Inputs pin
-byte PinInput[] = {23, 25,27,29,31,33,35,37};
+byte PinInput[] = {40,41,42,43,44,45,46,47,48,49};
 
 //Define pines de Salidas
 //Outputs pin
-byte PinOutput[]={22, 24,26,28,30,32,34,36,38,40,42,43,44,45,46,47};
+byte PinOutput[]={22, 23,24,25,26,27,28,29,30,31,32,33,34,35,36,37};
 
 //Numero de Persianas
 //Number of blind
@@ -122,16 +131,13 @@ const byte NumeroPersianas = 2;
 //If you change the IP address will have to adjust in android application
 //If you change the Local Port address will have to adjust in android application
 
-byte mac[] = {0xDE, 0xAD, 0xBE, 0xEF, 0xFE, 0xED };
+byte mac[] = {0x90, 0xA2, 0xDA, 0x0F, 0x26, 0x19 };
 IPAddress ip(192, 168, 1, 200);
 unsigned int localPort = 5000;      // puerto local para eschucha de paquete
 
 const String Mail ="";
-const char* Key ="12345678";          //8 Characters, no more, no less....8 Caracteres, no mas, no menos
+const char* Key ="99999999";          //8 Characters, no more, no less....8 Caracteres, no mas, no menos
 const boolean SecureConnection=false;  // ENABLED SECURE CONNECTION = TRUE.... CONEXION SEGURA = TRUE
-
-// Set or reset watchdog
-//Activa o desactiva perro guardian
 
 
 /***********************************************************************************************************************/
@@ -144,9 +150,15 @@ const boolean SecureConnection=false;  // ENABLED SECURE CONNECTION = TRUE.... C
 /***********************************************************************************************************************/
 /***********************************************************************************************************************/
 /***********************************************************************************************************************/
-#define Number_SwicthInput ( sizeof(PinSwicthInput))
-#define Number_Input ( sizeof(PinInput))
-#define Number_Output ( sizeof(PinOutput))
+
+#define NSINPUT ( sizeof(PinSwicthInput))
+#define NINPUT ( sizeof(PinInput))
+#define NOUTPUT ( sizeof(PinOutput))
+
+const byte Number_SwicthInput=NSINPUT;
+const byte Number_Input=NINPUT;
+const byte Number_Output=NOUTPUT;
+
 
 byte EspRfrIp = 0;
 // buffers para recepcion y envio de datos
@@ -207,21 +219,22 @@ void setup() {
   //LUEGO BORRAR!!!!
   for(int c=0;c<30;c++)EEPROM.write(900+c,0);
   #ifdef DEBUG_MODE   
-   Serial.begin(9600);                   
+   Serial.begin(9600);      
+   Serial.println("Sistema Iniciado");   
   #endif
 
   SystemSetup();//Dont remove this line, no elimines esta linea
-  //si estas usando receptor infrarrojos Reinicialo
-  //if you are using infrared receiver restart it  
-  //irrecv.enableIRIn(); // Re-enable receiver  
+
 }
+
 void loop(){
 
    SystemLoop();//Dont remove this line, no elimines esta linea   
- }
-void Loop30Sg(){
-//Este evento se produce cada 30sg.
-//This event occurs every 30SG.
+
+}
+  void Loop30Sg(){
+  //Este evento se produce cada 30sg.
+  //This event occurs every 30SG.
 
 }
 /******************************************************************************************************************************/
@@ -257,18 +270,13 @@ void SwicthStateChange(int NumberInput){
   /*****************************************************************/
     //Ejemplo de uso
   // Example of use
-  
 
-  //Ado Circuito numero 3 (Conmutador )
-   if (NumberInput==0){if (ElectricalCircuitValue[2]==1){ElectricalCircuitValue[2]=0;}else{ElectricalCircuitValue[2]=1;}}
-
-   if (NumberInput==1){if (ElectricalCircuitValue[3]==1){ElectricalCircuitValue[3]=0;}else{ElectricalCircuitValue[3]=1;}}
 }
 void ShortInput(int NumberInput){
   #ifdef DEBUG_MODE   
    Serial.print("Short Input End");Serial.println(NumberInput);                
   #endif
-  
+
   /*****************************************************************/
   //Este evento se produce con una pulsación corta.
   // This event occurs with a short press.
@@ -276,7 +284,7 @@ void ShortInput(int NumberInput){
   //Ejemplo de uso
   // Example of use
   
-
+  
   //Iluminacion 1
   if (NumberInput==0){
          switch (ElectricalCircuitValue[0]) {
@@ -291,7 +299,7 @@ void ShortInput(int NumberInput){
        }  
   }
   //Iluminacion 2
-  if (NumberInput==1){
+  if (NumberInput==2){
      switch (ElectricalCircuitValue[1]) {
           case 0:    
             ElectricalCircuitValue[1]=3; break;
@@ -303,19 +311,24 @@ void ShortInput(int NumberInput){
              ElectricalCircuitValue[1]=2; break;          
        } 
   }
-
+  
+  //Enchufe 1
+   if (NumberInput==7){if (ElectricalCircuitValue[6]==1){ElectricalCircuitValue[6]=0;}else{ElectricalCircuitValue[6]=1;}}
+    
+   //Enchfue 2
+   if (NumberInput==6){if (ElectricalCircuitValue[7]==1){ElectricalCircuitValue[7]=0;}else{ElectricalCircuitValue[7]=1;}}
+   
    //Persianas
   //blind
   //Ejemplo de uso
   // Example of use  
    
    //Persiana 1 
-   if (NumberInput==4){ElectricalCircuitValue[23]=100;} //Open blind 100%
-   if (NumberInput==5){ElectricalCircuitValue[23]=0;}//Closed blind 
+   if (NumberInput==1){ElectricalCircuitValue[23]=100;}
+   if (NumberInput==5){ElectricalCircuitValue[23]=0;}
   //Persiana 2
-   if (NumberInput==6){ElectricalCircuitValue[24]=100;}//Open blind 100%
-   if (NumberInput==7){ElectricalCircuitValue[24]=0;}//Closed blind 
-
+   if (NumberInput==9){ElectricalCircuitValue[24]=100;}
+   if (NumberInput==4){ElectricalCircuitValue[24]=0;}
 }
 void LongInputEnd(int NumberInput){
   #ifdef DEBUG_MODE   
@@ -334,10 +347,10 @@ void LongInputEnd(int NumberInput){
   // Example of use
 
   
-  if (NumberInput==4){InUpPersiana[0]=false;}//detiene subida de persiana en manual,Manual shutter up stops 
-  if (NumberInput==5){InDowPersiana[0]=false;}//detiene bajada persiana manual, Manual shutter down stops0
-  if (NumberInput==6){InUpPersiana[1]=false;}//detiene subida de persiana en manual,Manual shutter up stops 
-  if (NumberInput==7){InDowPersiana[1]=false;}//detiene subida de persiana en manual,Manual shutter up stops
+  if (NumberInput==1){InUpPersiana[0]=false;}
+  if (NumberInput==5){InDowPersiana[0]=false;}
+  if (NumberInput==9){InUpPersiana[1]=false;}
+  if (NumberInput==4){InDowPersiana[1]=false;}
   
 }
 void LongInput(int NumberInput){
@@ -354,24 +367,20 @@ void LongInput(int NumberInput){
   // Example of use
   
   
-    //Pulsador Ado. Circuito 1
+      //Pulsador Iluminacion 1
    if (NumberInput==0){ElectricalCircuitValue[0]=0;}
    
-   //Pulsador Ado. Circuito 2
-   if (NumberInput==1){ElectricalCircuitValue[1]=0;}  
+   //Pulsador Iluminacion 2
+   if (NumberInput==2){ElectricalCircuitValue[1]=0;}  
    
-
-  //Persianas
-  //blind
-  //Ejemplo de uso
-  // Example of use
-
-  if (NumberInput==4){InUpPersiana[0]=true;InDowPersiana[0]=false;}//Sube persiana 0 mientras se pulsa, Upload shutter while pressing 
-  if (NumberInput==5){InDowPersiana[0]=true;InUpPersiana[0]=false;}//Baja persiana 0 mientras se pulsa, Donwload shutter while pressing 
-  if (NumberInput==6){InUpPersiana[1]=true;InDowPersiana[1]=false;}//Sube persiana  mientras se pulsa, Upload shutter while pressing 
-  if (NumberInput==7){InDowPersiana[1]=true;InUpPersiana[1]=false;}//Baja persiana  mientras se pulsa, Donwload shutter while pressing 
+  //Pulsador Enchufe 1 
+  if (NumberInput==7){ElectricalCircuitValue[6]=1;ElectricalCircuitValue[7]=1;ElectricalCircuitValue[8]=1;}
+  
+   //Pulsador Enchfue 2
+   if (NumberInput==6){ElectricalCircuitValue[6]=0;ElectricalCircuitValue[7]=0;ElectricalCircuitValue[8]=0;}
   
 }
+
 void OutControl()
 {
 
@@ -385,25 +394,34 @@ void OutControl()
   //Ejemplo de uso
   // Example of use
  
+   /*************************************************************/
+   //Gestion Salidas
+   //Activamos los reles de control.
+   
+   // Outputs Management
+   // Activate control relays.
+   /*************************************************************/
+  //Ejemplo de uso
+  // Example of use
   
    // Circuito Numero 1
    //Iluminacion Iluminacion con 3 puntos de luz controlados mediante 2 Reles.
    switch (ElectricalCircuitValue[0]) {
     case 0:    // your hand is on the sensor
-      digitalWrite(PinOutput[4], LOW);
-      digitalWrite(PinOutput[5], LOW); 
+      digitalWrite(PinOutput[1], LOW);
+      digitalWrite(PinOutput[3], LOW); 
       break;
     case 1:    // your hand is close to the sensor
-      digitalWrite(PinOutput[4], HIGH);
-      digitalWrite(PinOutput[5], LOW); 
+      digitalWrite(PinOutput[1], HIGH);
+      digitalWrite(PinOutput[3], LOW); 
       break;
     case 2:    // your hand is a few inches from the sensor
-       digitalWrite(PinOutput[4], LOW);
-      digitalWrite(PinOutput[5], HIGH); 
+       digitalWrite(PinOutput[1], LOW);
+      digitalWrite(PinOutput[3], HIGH); 
       break;
      case 3:    
-       digitalWrite(PinOutput[4], HIGH);
-      digitalWrite(PinOutput[5], HIGH); 
+       digitalWrite(PinOutput[1], HIGH);
+      digitalWrite(PinOutput[3], HIGH); 
       break;
      default:    
       ElectricalCircuitValue[0]=0;
@@ -414,27 +432,27 @@ void OutControl()
    //Iluminacion Iluminacion con 3 puntos de luz controlados mediante 2 Reles.
      switch (ElectricalCircuitValue[1]) {
     case 0:    
-      digitalWrite(PinOutput[6], LOW);
+      digitalWrite(PinOutput[5], LOW);
       digitalWrite(PinOutput[7], LOW); 
       break;
     case 1:    
-      digitalWrite(PinOutput[6], HIGH);
+      digitalWrite(PinOutput[5], HIGH);
       digitalWrite(PinOutput[7], LOW); 
       break;
     case 2:    
-       digitalWrite(PinOutput[6], LOW);
+       digitalWrite(PinOutput[5], LOW);
       digitalWrite(PinOutput[7], HIGH); 
       break;
      case 3:    
-       digitalWrite(PinOutput[6], HIGH);
+       digitalWrite(PinOutput[5], HIGH);
       digitalWrite(PinOutput[7], HIGH); 
       break;
      default:    
       ElectricalCircuitValue[1]=0;
       break;
   }
-  
-  // Circuito Ado Numero 3
+  // Circuito Numero 3
+      //Ado Pasillo
    switch (ElectricalCircuitValue[2]) {
     case 0:    
       digitalWrite(PinOutput[8], HIGH);
@@ -446,8 +464,8 @@ void OutControl()
       ElectricalCircuitValue[2]=0;
    }
   
-  // Circuito Ado Numero 4
-
+  // Circuito Numero 4
+      //Ado Interruptor
    switch (ElectricalCircuitValue[3]) {
     case 0:    
       digitalWrite(PinOutput[9], HIGH);
@@ -459,16 +477,15 @@ void OutControl()
       ElectricalCircuitValue[3]=0;
    }
   
-  
   // Circuito Numero 7
    //Enchufe
       //Enchufes
    switch (ElectricalCircuitValue[6]) {
     case 0:    
-      digitalWrite(PinOutput[11], HIGH);
+      digitalWrite(PinOutput[15], HIGH);
       break;
     case 1:    
-      digitalWrite(PinOutput[11], LOW); 
+      digitalWrite(PinOutput[15], LOW); 
       break;
     default:
       ElectricalCircuitValue[6]=0;
@@ -477,48 +494,69 @@ void OutControl()
    //Enchufe numero 1
    switch (ElectricalCircuitValue[7]) {
     case 0:    
-      digitalWrite(PinOutput[12], HIGH);
+      digitalWrite(PinOutput[13], HIGH);
       break;
     case 1:    
-      digitalWrite(PinOutput[12], LOW); 
+      digitalWrite(PinOutput[13], LOW); 
       break;
     default:
       ElectricalCircuitValue[7]=0;
    }
- 
-
+  // Circuito Numero 9
+   //Enchufe numero 1
+    switch (ElectricalCircuitValue[8]) {
+    case 0:    
+      digitalWrite(PinOutput[11], HIGH);
+      break;
+    case 1:    
+      digitalWrite(PinOutput[11], LOW); 
+      break;
+    default:
+      ElectricalCircuitValue[8]=0;
+   }
    // Circuito Numero 10
-   //Persiana 1 1
+   //Enchufe numero 1
    if ((OutDowPersiana[0]==true)||(OutUpPersiana[0]==true))
    {
-     if ((OutDowPersiana[0]==true)&&(OutUpPersiana[0]==false)){digitalWrite(PinOutput[0], HIGH); digitalWrite(PinOutput[1], HIGH);  }
-     if ((OutDowPersiana[0]==false)&&(OutUpPersiana[0]==true)){digitalWrite(PinOutput[0], HIGH); digitalWrite(PinOutput[1], LOW);  }     
+     if ((OutDowPersiana[0]==true)&&(OutUpPersiana[0]==false)){digitalWrite(PinOutput[2], LOW); digitalWrite(PinOutput[0], LOW);  }
+     if ((OutDowPersiana[0]==false)&&(OutUpPersiana[0]==true)){digitalWrite(PinOutput[2], HIGH); digitalWrite(PinOutput[0], LOW);  }     
    }
    else{
-     
-     digitalWrite(PinOutput[0], LOW);
-     digitalWrite(PinOutput[1], LOW);
+     digitalWrite(PinOutput[0], HIGH);
+     digitalWrite(PinOutput[2], HIGH);
    }
    //Persiana 2
    if ((OutDowPersiana[1]==true)||(OutUpPersiana[1]==true))
    {
-     if ((OutDowPersiana[1]==true)&&(OutUpPersiana[1]==false)){digitalWrite(PinOutput[2], HIGH); digitalWrite(PinOutput[3], HIGH);  }
-     if ((OutDowPersiana[1]==false)&&(OutUpPersiana[1]==true)){digitalWrite(PinOutput[2], HIGH); digitalWrite(PinOutput[3], LOW);  }     
+     if ((OutDowPersiana[1]==true)&&(OutUpPersiana[1]==false)){digitalWrite(PinOutput[6], LOW); digitalWrite(PinOutput[4], LOW);  }
+     if ((OutDowPersiana[1]==false)&&(OutUpPersiana[1]==true)){digitalWrite(PinOutput[6], HIGH); digitalWrite(PinOutput[4], LOW);  }     
    }
    else{
-     digitalWrite(PinOutput[2], LOW);
-     digitalWrite(PinOutput[3], LOW);
+     digitalWrite(PinOutput[4], HIGH);
+     digitalWrite(PinOutput[6], HIGH);
    }
+   
+   
+   //Reles de reserva
+   //Su estado de reposo corresponde a un nivel logico alto
+
+   digitalWrite(PinOutput[12], HIGH);
+   digitalWrite(PinOutput[14], HIGH);
+ 
 }
 
 char* RunCommand(byte CommandNumber){
   //Este evento se produce cuando se ejecuta un comando desde el app
   //This event occurs when a command is executed from the app
    #ifdef DEBUG_MODE   
-    Serial.print("Command Nª");Serial.println(CommandNumber);               
+    Serial.print("Command Nª");Serial.println(CommandNumber);     
   #endif
-
-
+  
+  //Enabled this line for send infrared 
+   #ifdef LED_IR
+     SendIr(CommandNumber);
+   #endif
+  
  return "COMPLETED";
 }
 void CommonOrders(byte CommandNumber){
