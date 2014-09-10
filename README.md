@@ -1,7 +1,10 @@
-ArduinoDomoticExcontrol-
+ArduinoDomoticExcontrol- 
 ========================
+ACTUALIZACION VERSION 2.0.2
 
-Home automation system with Arduino and Android (Arduino Domotics Home Excontrol Free ) http://excontrol.es/Domotica-Arduino/
+Home automation system with Arduino and Android (Arduino Domotics Home Excontrol Free ) 
+
+http://excontrol.es/Domotica-Arduino/
 
 Control domotico con arduino.
 
