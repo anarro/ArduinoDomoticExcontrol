@@ -268,6 +268,7 @@ void setup()
     Serial.println();
   #endif
 
+  for (int per=0; per<NumeroPersianas; per++){InDowPersiana[per]=false;InUpPersiana[per]=false;}  
 
   //Fijamos pines entrada salida
   unsigned long currenMillis = millis();
@@ -301,13 +302,10 @@ void setup()
 	pinMode(PinOutput[i], OUTPUT);
 	digitalWrite(PinOutput[i],LOW);
   }
-
-  for (int per=0; per<NumeroPersianas; per++){InDowPersiana[per]=false;InUpPersiana[per]=false;}  
- 
+  
   for (int i=0; i<10;i++){
 	Consignas[i]=EepromRead(940 + i);
   }  
-   for (int i=0; i<20; i++){Alarms[i]=EEPROM.read(3880+i);if (Alarms[i]>=5){Alarms[i]=0;}}  
   //Fijamo valores y posicion inicio persianas
   //Fijamos el tiempo de subida bajada Persianas
   //Se encuentran apartir de la direccion 3880 
@@ -938,7 +936,7 @@ void RecepcionPaqueteUDP(){
     else if (strncmp(packetBuffer, "WPERS", 5)==0){
       p=3880;
       indexdata=5;
-      for (c = 0; c<20; c++){
+      for (byte  i = 0; i<20;i++){
         EepromWrite(p++, packetBuffer[indexdata++]-1);
       }
       ReiniciarTiempoPersianas();
@@ -987,14 +985,6 @@ void RecepcionPaqueteUDP(){
       #else
         strcpy(packetBuffer , "NOFOUND!!");
       #endif  
-    }
-    else if (strncmp(packetBuffer, "ALRM", 4)==0){
-      strcpy(packetBuffer, "ESAL");
-      indexstr=4;  
-      for (c= 0; c< sizeof(Alarms); c++){
-        packetBuffer[indexstr++]=Alarms[c]+1;
-      }
-      packetBuffer[indexstr]='\0';     
     }
     else {
       strcpy(packetBuffer,"REPETIRMSG");     //esto se tiene que estudiar no deberia responder ni guardar ip.
@@ -1350,8 +1340,18 @@ char* CharNull(char* Val){
 #endif
 
 //Funciones alarmas
-void SetAlarm(int Number){if ((Number<=19)&&(Alarms[Number]==0)){Alarms[Number]=1;}}
-void ResetAlarm(int Number){if ((Number<=19)&&(Alarms[Number]==2)){Alarms[Number]=0;}}
+void SetAlarm(int Number){
+  if (Number<=19){
+    if(Alarms[Number]==false){
+      Notification(GetAlarmsName(Number));
+      Alarms[Number]=true;
+    }  
+  }  
+}
+
+void ResetAlarm(int Number){
+	if (Number<=19){Alarms[Number]=false;}
+}
 
 void loop()
 {
