@@ -19,8 +19,8 @@ void setup(){
   for (int c=0;c<Number_Circuit;c++){
     
     circuits[c].Device_Number=0;
-    circuits[c].Out1_Value=LOW;
-    circuits[c].Out2_Value=LOW;
+    circuits[c].Out1_Value=Off;
+    circuits[c].Out2_Value=Off;
     circuits[c].Value=0;
     circuits[c].CopyRef=0;
     circuits[c].Circuit_Type=TipeCir[c];
@@ -67,7 +67,7 @@ void setup(){
     reading = digitalRead(PinSwicthInput[i]);LastTimeSwicthInput[i]=millis();SwicthState[i]=reading;
   }
   
-  for (int i=0; i<Number_Output;i++){pinMode(PinOutput[i], OUTPUT);digitalWrite(PinOutput[i],LOW);}
+  for (int i=0; i<Number_Output;i++){pinMode(PinOutput[i], OUTPUT);digitalWrite(PinOutput[i],Off);}
   for (int i=0; i<10;i++){Consignas[i]=EEPROM.read(940 + i);}
   for (int i=0;i<20;i++){Alarms[i]=EEPROM.read(3880+i);if (Alarms[i]>=5){Alarms[i]=0;}}
   
@@ -95,6 +95,7 @@ void setup(){
     }
     
     if (SdOk){
+      
         //Log File
       SdFile = SD.open("log.txt", FILE_WRITE);
       String Log= "Start at " + ((String)hour) + ":" +((String)minute) + " - " +((String)dayOfMonth) + "/" + ((String)month) + "/"+((String)year) + "/";
@@ -175,12 +176,17 @@ void setup(){
   UserSetup();
 }
 void loop(){
-  if (Connecting==false){
-  for (int a=0;a<=19;a++){
-    if (Alarms[a]==1){
-      boolean res=Notification(GetAlarmsName(a));
-      if (res){Alarms[a]=2;}break;      
-      }  
+  if((TimNow - TimSg) >= 1000) {
+    LoopNewSecond();
+    TimSg=TimNow;
+    if (Connecting==false){
+      for (int a=0;a<=19;a++){
+        if (Alarms[a]==1){
+          boolean res=Notification(GetAlarmsName(a));
+          if (res){Alarms[a]=2;}
+          break;
+        }  
+      }
     }
   }
   SystemLoop();
@@ -198,10 +204,10 @@ void SystemLoop(){
       Recepcion433Mhz();
    #endif
   
- 
-   
-   if(millis() < LastMsg ) {CargaHora();}
-   if((millis() - LastMsg) >= 30000) {
+   TimNow=millis();     
+   if(TimNow < TimSg ) {TimSg=TimNow;}
+   if(TimNow < Tim30Sg ) {CargaHora();}
+   if((TimNow - Tim30Sg) >= 30000) {
   
      #ifdef THERMOSTAT_DS18B20_NUMBER   
        RefreshTemperature();
@@ -896,7 +902,7 @@ void SelectScene(int Dir){Dir = (Dir-1) * 30;for (byte i =0 ; i<Number_Circuit;i
 void CargaHora()
 {
   getDateDs1307(&second, &minute, &hour, &dayOfWeek, &dayOfMonth, &month, &year);
-  LastMsg=millis();
+  Tim30Sg=millis();
   if (minute != minutoMemory){ActualizaMinuto();NewMinute();  }
 }
 void ActualizaMinuto()
@@ -1092,13 +1098,14 @@ boolean ComproRespuestaHTTP(){
     else{
       SystemLoop();
       delay(10);
-      if (Reintento >= 100 ){
+      if (Reintento >= 700 ){
         client.stop();
         client.flush();
         Connecting=false;
         return false;
       }
     }
+    Reintento++;
   }
 }
 #ifdef ARDUINO_MEGA
@@ -1271,13 +1278,16 @@ void ConexionWifi() {
     if (Net_Type == WEP){WiFi.begin(ssid, pass); }//WPA NETWORK
     if (Net_Type == WPA){WiFi.begin(ssid, keyIndex, pass); }//WEP 
     
+    #ifdef ENABLE_WATCH_DOG
+      wdt_disable();
+    #endif 
     
-    wdt_disable();
     delay(10000);  //Esperamos 10 segundos para conexion
-    wdt_enable(WDTO_8S); 
-
+    #ifdef ENABLE_WATCH_DOG
+      wdt_enable(WDTO_8S); 
+    #endif 
+    
     TimConexion=millis();
-
 }
 #endif
 

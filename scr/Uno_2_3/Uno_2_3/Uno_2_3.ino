@@ -1,49 +1,99 @@
-//http://forum.arduino.cc/index.php/topic,53923.0.html
 // BOF preprocessor bug prevent - insert me on top of your arduino-code
 // From: http://www.a-control.de/arduino-fehler/?lang=en
-#if 1
-__asm volatile ("nop");
-#endif
+//#if 1
+//__asm volatile ("nop");
+//#endif
+
+
+// Enumera tipos de circuitos.
+//#define Reserva       	1
+//#define Ado_Digital   	2
+//#define Ado_3Etapas   	3
+//#define Ado_Retroaviso 	4
+//#define Enchufe		8
+//#define EnchufeRF	9
+//#define	Riego		14
+//#define Riego_Temporizado 15
+//#define Valvula		16
+//#define ConsignaTemp	30
+//#define Frio		20
+//#define Calor		25
+//#define Radiante	26
+//#define	Persiana	35
+//#define Toldo		36
+//#define	Puerta		40
+//#define	Ventilador	44
+//#define	Piloto  	52
+#include   "Excontrol_def.h"
+
+/**************************************************************************
+  #Librerias estandar shield ETHERNET. UNO Y MEGA.
+***************************************************************************/
+
+  #include <SPI.h>
+  #include <Ethernet.h>
+  #include <EthernetUdp.h>
+
+/**************************************************************************
+  #      SOLO MEGA
+  #Librerias estandar shield WIFI.....
+**************************************************************************/
+//  #include <SPI.h>
+//  #include <WiFi.h>
+//  #include <WiFiUdp.h>
+//  #define WIFI_SHIELD;
+  
+/**************************************************************************
+  #     OBLIGATORIO UNO, NANO ATMEGA 328 
+  #     EN CASO MEGA USA MEMORIA EXTERNA.  
+  #Librerias estandar modulo Reloj.......  
+  
+  #define moduleDS3231 o #define moduleDS1307
+***************************************************************************/
+  #include <Wire.h>
+  #define moduleDS1307  
+
+/**************************************************************************
+  #      SOLO MEGA
+  #Librerias estandar Eeprom interna.
+***************************************************************************/
+
+//  #include <Wire.h>
+//  #include <EEPROM.h>
+//  #define EEPROM_INTERNA
+
+/**************************************************************************
+  #      SOLO MEGA
+  #Activar historicos en SD y las librerias necesarias. 
+***************************************************************************/
+// #include <SD.h>
+// #define Historical_SD 
+
+
+/**************************************************************************
+  #Herramientas de depuracion.
+***************************************************************************/
 
 //Enable watch dog
 //habilita perro guardian
-//#define ENABLE_WATCH_DOG
-//#define INTERNAL_RESISTOR
-//#define WIFI_SHIELD
-#define ARDUINO_MEGA
+//#define ENABLE_WATCH_DOG;
+//#define DEBUG_MODE
 
-#ifdef ENABLE_WATCH_DOG
-  #include <avr/wdt.h>
-#endif 
-#include <SPI.h>  
-#ifdef WIFI_SHIELD
-  #include <WiFi.h>
-  #include <WiFiUdp.h>
-#else
-  #include <Ethernet.h>
-  #include <EthernetUdp.h>  
- // #include <utility/w5100.h>     // Advance Ethernet functions
-#endif
-#ifdef ARDUINO_MEGA
-  #include <SD.h>
-#endif 
-#include <EEPROM.h>
-#include <Wire.h>
-#define UDP_TX_PACKET_MAX_SIZE 100 //increase UDP size
-#define DS_RTC 0x68  //Direccion Reloj
-//****************************************************
+
+
+
 //CONFIGURACION EQUIPOS INTALADOS, TERMOSTATOS, ENCHUFES RADIOFRECUENCIA 433MHZ, INFARROJOS.
 //EQUIPMENT CONFIGURATION , THERMOSTAT, RADIO 433MHZ, INFARROJOS.
 
 
-//#define DEBUG_MODE  //Send information  by serial port 
+
 //#define LED_IR 
 //#define IR_RECIVE 
-//#define THERMOSTAT_DS18B20_NUMBER 1
+//#define THERMOSTAT_DS18B20_NUMBER
 //#define RECEIVER_433
 //#define TRANSMITER_433
 //#define ELECTRIC_OUTLET_433
-//#define RETROAVISOS //Habilita funcionamiento por retroavisos	
+//#define RETROAVISOS //Habilita funcionamiento por retroavisos
 
 
 /***********************************************************************************************************************/
@@ -61,11 +111,13 @@ __asm volatile ("nop");
     #include <RCSwitch.h>
   #endif
 #endif 
+
 #ifdef ELECTRIC_OUTLET_433 
   #if !defined (RECEIVER_433)  || !defined (TRANSMITER_433)
     #include <RCSwitch.h>
   #endif 
 #endif 
+
 #ifdef LED_IR  
   #include <IRremote.h>
   IRsend irsend;
@@ -75,7 +127,6 @@ __asm volatile ("nop");
  #ifndef LED_IR
     #include <IRremote.h>
   #endif
-
   IRrecv irrecv(19);//El 19 corresponde con el pin de arduino, cambiar para utilizar otro
   decode_results results;
 #endif 
@@ -97,38 +148,17 @@ __asm volatile ("nop");
   RCSwitch mySwitch = RCSwitch();
 #endif
 #if defined (TRANSMITER_433)  && !defined (RECEIVER_433)
-  RCSwitch mySwitch = RCSwitch();
-  
+  RCSwitch mySwitch = RCSwitch();  
 #endif 
 
 #ifdef ELECTRIC_OUTLET_433
   #if !defined (TRANSMITER_433)  && !defined (RECEIVER_433)
     RCSwitch mySwitch = RCSwitch();
   #endif
-
 #endif 
 
 
-/***********************************************************************************************************************/
-/***********************************************************************************************************************/
-/***********************************************************************************************************************/
-/***********************************************************************************************************************/
-//ZONA DE CONFIGURACIONES 
-//SETTINGS ZONE
-//Define numero de entradas salidas 
-//Configuracion Red
-//Activa o desactiva el perro guardian
-/******************************************************************************************************************************/
 
-//SETTINGS ZONE
-//Defines number of inputs and outputs
-//Network configuration
-//Set or Restet Daylight saving time o DST
-//Set or Reset watchdog
-/***********************************************************************************************************************/
-/***********************************************************************************************************************/
-/***********************************************************************************************************************/
-/***********************************************************************************************************************/
 //Activa o desactiva cambio hora automatico invierno verano
 //Set or Restet Daylight saving time o DST
 //El modo dts esta configurado para europa
@@ -137,23 +167,37 @@ __asm volatile ("nop");
 //For other countries configure  function  CargaHora()
 const boolean Enable_DaylightSavingTime  = true; 
 
-//Numero de Entradas con conmutador
-//Number of swicth Inputs
- byte PinSwicthInput[] = {};
+/**************************************************************************
+    CONFIGURACION DE PINES Y CIRCUITOS.
+    
+***************************************************************************/
+// POLARIZAION PINES ENTRADA
+  #define INTERNAL_RESISTOR; 
+
+// MODO ACTIVACION RELES.
+  #define On HIGH
+  #define Off LOW
+
+//Entradas con conmutador
+//Swicth Inputs
+byte PinSwicthInput[]={5};
 
 //Define pines de Entradas
 //Inputs pin
-byte PinInput[] = {};
+byte PinInput[]={2,3,4};
 
 //Define pines de Salidas
 //Outputs pin
-byte PinOutput[]={22, 24,26,28};
+byte PinOutput[]={6,7,8,9};
 
 //Numero de Persianas
 //Number of blind
-const byte NumeroPersianas = 7; 
-const unsigned int On = HIGH;
-const unsigned int Off =LOW;
+const byte NumeroPersianas = 1;
+
+// Circuitos 
+const byte Circuit_Type[] ={Ado_3Etapas, Ado_Digital, Enchufe, Persiana};
+
+
 /***********************************************************************************************************************/
 /***********************************************************************************************************************/
 //VARIABLES PARA CONTROL ESTADO CIRUCITOS
@@ -162,10 +206,16 @@ const unsigned int Off =LOW;
 /***********************************************************************************************************************/  
 
 #ifdef RETROAVISOS 
-  byte PinEstadoCircuito[]={};//Indicar el pin de las entradas que son retroavisos.
-  const byte Retroavisos_Number=sizeof(PinEstadoCircuito);
+  byte PinEstadoCircuito[]={27};
+  #define RETROAVISO_NUMBER ( sizeof(PinEstadoCircuito))
+  const byte Retroavisos_Number=RETROAVISO_NUMBER;
   unsigned long LastTimeEstadoRetroaviso[Retroavisos_Number];  
 #endif
+
+
+#include "v2.h"
+
+
 //CONFIGURACION DE RED
 //Direccion IP ES MUY PROBABLE QUE TENGAS QUE AJUSTARLO A TU RED LOCAL
 //Cambia la ip por una dentro de tu rango, tambien debes actualizarla en tu aplicacion android
@@ -176,8 +226,7 @@ const unsigned int Off =LOW;
 //If you change the IP address will have to adjust in android application
 //If you change the Local Port address will have to adjust in android application
 //WIRELESS CONFIGURATION
-#ifdef WIFI_SHIELD 
-  enum Net_Security {OPEN,WEP,WPA};
+#ifdef WIFI_SHIELD enum Net_Security {OPEN,WEP,WPA};
   Net_Security Net_Type = WEP;
   char ssid[] = "YOUR-SSID"; //  your network SSID (name) 
   char pass[] = "YOUR-PASSWORD";    // your network password (use for WPA, or use as key for WEP)
@@ -185,12 +234,12 @@ const unsigned int Off =LOW;
   
   unsigned int TimConexion;
   int status = WL_IDLE_STATUS;     // the Wifi radio's status
-  char packetBuffer[UDP_TX_PACKET_MAX_SIZE]; 
+//  char packetBuffer[UDP_TX_PACKET_MAX_SIZE]; 
   WiFiClient client;
   WiFiUDP Udp;
 #else
   // buffers para recepcion y envio de datos
-  char packetBuffer[UDP_TX_PACKET_MAX_SIZE]; 
+//  char packetBuffer[UDP_TX_PACKET_MAX_SIZE]; 
   EthernetClient client;
   // Instanacia Ethernet UDP Para enviar y recibir paqueteP
   EthernetUDP Udp;
@@ -198,96 +247,21 @@ const unsigned int Off =LOW;
 #endif
 
 
-byte mac[] = {0x90, 0xA2, 0xDA, 0x0F, 0x26, 0x19 };
-IPAddress ip(192, 168, 1, 200);
-unsigned int localPort = 5000;      // puerto local para eschucha de paquete
+byte mac[] = {0x90, 0xA2, 0xDA, 0x0F, 0x26, 0x20};
+IPAddress ip(192,168,2,49);
+unsigned int localPort = 5000;
 const String Mail ="";
-const char* Key ="12345678"; 
-const boolean SecureConnection=false;  // ENABLED SECURE CONNECTION = TRUE.... CONEXION SEGURA = TRUE
+const char* Key ="";
+const boolean SecureConnection=false;
 
+//#include "root/Common_functions.h"
 
-
-/***********************************************************************************************************************/
-/***********************************************************************************************************************/
-/***********************************************************************************************************************/
-/***********************************************************************************************************************/
-//FIN DE ZONAS DE CONFIGURACIONES
-//END SETTINGS ZONE
-/***********************************************************************************************************************/
-/***********************************************************************************************************************/
-/***********************************************************************************************************************/
-/***********************************************************************************************************************/
-enum CircuitsTypes {Reserva,Ado_Digital,Ado_Retroaviso,Ado_3Etapas,Enchufe,EnchufeRF,Riego,Riego_Temporizado,Persiana,ConsignaTemp,Frio,Calor,Puerta,Toldo,Valvula,Ventilador,Radiante,Piloto};
-struct Circuit {CircuitsTypes Circuit_Type;unsigned int Out1_Value;unsigned int Out2_Value;int Device_Number;byte Value;byte OldValue;byte CopyRef;};
-CircuitsTypes TipeCir[] ={Radiante,Ventilador,Valvula,Piloto,Reserva,Reserva,Reserva,Reserva,Reserva,Reserva,Reserva,Reserva,Reserva,Reserva,Reserva,Reserva,Reserva,Reserva,Reserva,Reserva,Reserva,Reserva,Reserva,Reserva,Reserva,Reserva,Reserva,Reserva,Reserva,Reserva};
-
-#define SS_SD 4
-#define SS_ETHERNET 53 //53 for mega, for other set pin to 10
-#define SS_UNO 10
-
-const byte Number_SwicthInput=sizeof(PinSwicthInput);
-const byte Number_Input=sizeof(PinInput);
-const byte Number_Output=sizeof(PinOutput);
-const byte Number_Circuit=sizeof(TipeCir)/2;
-Circuit circuits[Number_Circuit];
-
-
-byte EspRfrIp = 0;
-
-//Varibles Reloj
-byte second, minute, hour, dayOfWeek, dayOfMonth, month, year,minutoMemory,TipoDia;
-boolean HoraRetrasa;
-unsigned long Tim30Sg,TimSg,TimNow;
-
-//Variables Gestion Entradas Salidas
-unsigned long LastTimeSwicthInput[Number_SwicthInput];  //Ultima vez que la entrada cambio el estado
-int SwicthState[Number_SwicthInput];         // current state of the button
-unsigned long LastTimeInput[Number_Input];  //Ultima vez que la entrada estaba en reposo
-byte InState[Number_Input];  //Estado Entrada
-
-
-//Variables Control Alarmas
-byte Alarms[]={0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
-
-/////////////////////////////////////////////////////////////////////////////////////////////////////////
-//Configuracion Persianas
-/////////////////////////////////////////////////////////////////////////////////////////////////////////
-byte PosicionPersiana[NumeroPersianas];  //Controla la posicion de la persiana % Subida
-byte LocalizadorPersiana[NumeroPersianas];  //Controla posicion persiana en array de circuitos
-
-
-unsigned long TiempoMovPersiana[NumeroPersianas];  //Tiempo de mov desde el ultimo refresco
-
-//Memoria de tiempos y posicion respecto a tiempo
-unsigned long TiempoPosPersianaUp[NumeroPersianas];  //Posicion persiana en subida
-unsigned long TiempoPosPersianaDown[NumeroPersianas];  //Posicion persiana en Bajada
-unsigned long TimUpPersiana[NumeroPersianas];  //Tiempo en MicrosSg subida persiana
-unsigned long TimDowPersiana[NumeroPersianas];  //Tiempo en MicrosSg bajada persiana
-
-//Variables para salidas y entradas
-boolean OutUpPersiana[NumeroPersianas];  //Boleana para activar salida persiana
-boolean OutDowPersiana[NumeroPersianas];  //Boleana para activar salida persiana
-boolean InUpPersiana[NumeroPersianas];  //Boleana pulsador subida Persiana
-boolean InDowPersiana[NumeroPersianas];  //Boleana pulsador bajada Persiana
-
-boolean Condicionados[10];              //Guarda el estado de los condicionados
-byte Consignas[10];                     //Guarda el valor de las consignas
-boolean Connecting=false;
-
-#ifdef ARDUINO_MEGA
-  boolean SdOk=true;
-  File SdFile;
-#endif 
-
-/***********************************************************************************************************************/
-/***********************************************************************************************************************/
-/***********************************************************************************************************************/
-/***********************************************************************************************************************/
-//ZONA DE CONFIGURACIONES 
-//SETTINGS ZONE
+#include "Common_functions.h"
 
 /******************************************************************************************************************************/
 void UserSetup() {
+    
+  
 
 }
 
@@ -295,21 +269,22 @@ void UserLoop(){
 
 
 }
+
 void LoopNewSecond(){
   //Este evento se produce cada segundo.
   //This event occurs every second.
 
 }
+
 void Loop30Sg(){
   //Este evento se produce cada 30sg.
   //This event occurs every 30SG.
 }
+
 void NewMinute(){
   //Este evento se produce cada cada minuto.
   //This event occurs every minute.
-  #ifdef DEBUG_MODE       
-    Serial.println("New Minute");   
-  #endif
+
 }
 /******************************************************************************************************************************/
  /***********************************************************************************************************************/
@@ -333,14 +308,24 @@ void NewMinute(){
 /***********************************************************************************************************************/
 /***********************************************************************************************************************/
 /***********************************************************************************************************************/
-void SwicthStateChange(int NumberInput, int Value){
+void SwicthStateChange(byte NumberInput){
+//AUTO GENERATED CODE
+/*************************************************************/
+	//CIRCUITO NUMERO 1
+	//Conmutador
+  if (NumberInput==0){
+    if (circuits[2].Value==1){
+      circuits[2].Value=0;
+    }
+    else{
+      circuits[2].Value=1;
+    }
+  }
 
-  #ifdef DEBUG_MODE 
-   Serial.print("Input Swicth State Change to");   
-   if (Value==HIGH){Serial.print("High, Nº Input ");}else{Serial.print("Low Nº Input ");}
-   Serial.println(NumberInput);        
-  #endif
-  
+/*************************************************************/
+//END GENERATED CODE
+/*************************************************************/
+
     /*****************************************************************/
   //Este evento se produce cuando un conmutador cambia posicion
   // This event occurs with swicth change state.
@@ -356,14 +341,62 @@ void SwicthStateChange(int NumberInput, int Value){
 
 
 }
-void ShortInput(int NumberInput){
+void ShortInput(byte NumberInput){
+/*************************************************************/
+//Este evento se produce con una pulsación corta..
+//This event occurs with a short press.
+//AUTO GENERATED CODE
+/*************************************************************/
+
+	//CIRCUITO NUMERO 0
+	//Circuito 
+	if (NumberInput==0){
+            
+		switch (circuits[0].Value){
+		case 0:
+		     circuits[0].Value=1;break;
+		case 1: 
+		     circuits[0].Value=2; break;
+		case 2: 
+		     circuits[0].Value=3; break;
+		case 3: 
+		     circuits[0].Value=0; break;}
+        }
+
+	//CIRCUITO NUMERO 1
+	//Circuito 
+    if (NumberInput==1){
+       if (circuits[1].Value==1){
+         circuits[1].Value=0;
+       }else{
+         circuits[1].Value=1;
+       }
+     }
+/*************************************************************/
+//END GENERATED CODE
+/*************************************************************/
   #ifdef DEBUG_MODE   
-   Serial.print("Short Input End, Input Number =");Serial.println(NumberInput);                
+   Serial.print("Short Input End ");
+   Serial.print(NumberInput);
+   Serial.print(" pin ");
+   Serial.println(PinInput[NumberInput]);    
   #endif
 }
-void LongInputEnd(int NumberInput){
+void LongInputEnd(byte NumberInput){
+/*************************************************************/
+//Este evento se produce con una pulsación corta..
+//This event occurs with a short press.
+//AUTO GENERATED CODE
+/*************************************************************/
+
+/*************************************************************/
+//END GENERATED CODE
+/*************************************************************/
   #ifdef DEBUG_MODE   
-    Serial.print("Long Input End, Input Number =");Serial.println(NumberInput);                 
+    Serial.print("Long Input End ");
+    Serial.print(NumberInput);
+    Serial.print(" pin ");
+    Serial.println(PinInput[NumberInput]); 
   #endif
   
   /*****************************************************************/
@@ -373,9 +406,22 @@ void LongInputEnd(int NumberInput){
   /*****************************************************************/
   
 }
-void LongInput(int NumberInput){
+void LongInput(byte NumberInput){
+/*************************************************************/
+//Este evento se produce con una pulsación corta..
+//This event occurs with a short press.
+//AUTO GENERATED CODE
+/*************************************************************/
+
+	
+/*************************************************************/
+//END GENERATED CODE
+/*************************************************************/
   #ifdef DEBUG_MODE   
-    Serial.print("Long Input Start, Input Number =");Serial.println(NumberInput);                
+    Serial.print("Long Input Start ");
+    Serial.print(NumberInput);
+    Serial.print(" pin ");
+    Serial.println(PinInput[NumberInput]);     
   #endif
  
   /*****************************************************************/
@@ -386,6 +432,26 @@ void LongInput(int NumberInput){
 }
 
 void OutControl(){
+/*************************************************************/
+//Activamos los reles de control. Activate control relays.
+//AUTO GENERATED CODE
+/*************************************************************/
+
+	//CIRCUITO NUMERO 0
+	//Circuito 
+	//Out 1
+	digitalWrite(PinOutput[0],circuits[0].Out1_Value);
+	//Out 2
+	digitalWrite(PinOutput[1],circuits[0].Out2_Value);
+
+	//CIRCUITO NUMERO 1
+	//Conmutador
+	//Out 1
+	digitalWrite(PinOutput[2],circuits[1].Out1_Value);
+
+/*************************************************************/
+//END GENERATED CODE
+/*************************************************************/
 }
 
 char* RunCommand(byte CommandNumber){
@@ -410,13 +476,38 @@ void CommonOrders(byte CommandNumber){
     Serial.println(CommandNumber);Serial.println(CommandNumber);             
   #endif
 }
+char* ReadSensor(byte NumeroSensor)
+{
   //Monitor sensores
   //monitor sensors
   //El parametro numero de sensor representa se corresponde con el sensor configurado en la app
   //The number represents sensor parameter corresponds to the sensor set in the app
-char* ReadSensor(byte NumeroSensor){
+  if (NumeroSensor==100){
+    char val[10];    
+    //dtostrf(Temperature[0],4,2,val);
+    return val;
+  }
+
   return "RESERVA"; //No borrar, dont delete this line
 }
 String GetAlarmsName(byte Number){
+/*************************************************************/
+//AUTO GENERATED CODE
+/*************************************************************/
+
+	if (Number==0){return "Reserva";}
+	if (Number==1){return "Reserva";}
+	if (Number==2){return "Reserva";}
+	if (Number==3){return "Reserva";}
+	if (Number==4){return "Reserva";}
+	if (Number==5){return "Reserva";}
+	if (Number==6){return "Reserva";}
+	if (Number==7){return "Reserva";}
+	if (Number==8){return "Reserva";}
+	if (Number==9){return "Reserva";}
+/*************************************************************/
+//END AUTO GENERATED CODE
+/*************************************************************/
+
     return "RESERVA";
 }
