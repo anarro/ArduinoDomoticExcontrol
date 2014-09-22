@@ -223,11 +223,11 @@ void setup()
       Serial.print(Number_Circuit);
       Serial.print(" circuit, types ");
    #endif
-  for (c=0;c<Number_Circuit;c++){
+  for (c=0; c<Number_Circuit; c++){
     circuits[c].Type=Circuit_Type[c];        
     circuits[c].Device_Number=0;
-    circuits[c].Out1_Value=off;
-    circuits[c].Out2_Value=off;
+    circuits[c].Out1_Value=Off;
+    circuits[c].Out2_Value=Off;
     circuits[c].Value=0;
     circuits[c].CopyRef=0;
  //   circuits[c].Type=TipeCir[c];
@@ -300,11 +300,12 @@ void setup()
   
   for (int i=0; i<Number_Output;i++){
 	pinMode(PinOutput[i], OUTPUT);
-	digitalWrite(PinOutput[i],off);
+	digitalWrite(PinOutput[i],Off);
   }
   
-  for (int i=0; i<10;i++){
-	Consignas[i]=EepromRead(EM_CONDITIONED_OFSSET + i);
+  for (int i=0; i < EM_SETPOINTS_SIZE; i++)
+  {
+	Consignas[i] = EepromRead ( EM_SETPOINTS_OFSSET + i);
   }  
   //Fijamo valores y posicion inicio persianas
   //Fijamos el tiempo de subida bajada Persianas
@@ -605,7 +606,7 @@ void GestionMovPersianas(byte NPersiana)
 void ReiniciarTiempoPersianas()
 {
 	for ( byte c =0; c<NumeroPersianas; c++){
-          TimUpPersiana[c]=((EM_UP_TIM_SHUTTER_OFFSET + c))* 1000000;
+          TimUpPersiana[c]=(EepromRead(EM_UP_TIM_SHUTTER_OFFSET + c))* 1000000;
           TimDowPersiana[c]=(EepromRead(EM_DO_TIM_SHUTTER_OFFSET + c))* 1000000;
         }
 }
@@ -865,8 +866,8 @@ void RecepcionPaqueteUDP(){
          
        strcpy(packetBuffer, "ENHOR");       
        indexstr=5;
-       p=400;
-       for (c=0; c<50; c++){
+       p=EM_EN_TIMETABLE_OFFSET;
+       for (c=0; c<EM_EN_TIMETABLE_SIZE; c++){
            packetBuffer[indexstr ++]=EepromRead(p++)+1;
        }
        packetBuffer[indexstr]='\0';
