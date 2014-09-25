@@ -1,30 +1,28 @@
-// BOF preprocessor bug prevent - insert me on top of your arduino-code
-// From: http://www.a-control.de/arduino-fehler/?lang=en
-//#if 1
-//__asm volatile ("nop");
-//#endif
+
+/**
+ \ Arduino_Sistema_Domotico.ino
+ \ http://excontrol.es/Domotica-Arduino/ExControl 
+ ****************************************************************************
+ ///  BASADO EN LA VERSIÓN 2.
+ *  Este archivo es una modificación para poder se utilizado con Arduinos
+ *  con microcontrolador Atmega328. (Arduino Uno , Arduino Ethernet, etc...
+ *
+ *  Marteriales necesarios.
+ *  Modulo I2C RTC http://domotica-arduino.es/comprar-online/es/11-comprar-reloj-arduino
+ *  Informacion conexiones
+ *  http://zygzax.com/2013/04/22/reloj-con-a...y-rtc-i2c/
+ *  http://www.tuelectronica.es/tutoriales/a...duino.html
+ *  EN EL CASO DE ATMEGA328 Arduino Uno el modulo RTC tiene que incluir una memoria 24C32.
+ *
+ *  Ethernet Shield  http://domotica-arduino.es/comprar-online/es/home/10-arduino-ethernet-shield.html 
+ * 
+ *  No esta probada en Arduino Leonardo.
+ ****************************************************************************/
 
 
-// Enumera tipos de circuitos.
-#define Reserva       	1
-#define Ado_Digital   	2
-#define Ado_3Etapas   	3
-#define Ado_Retroaviso 	4
-#define Enchufe		8
-#define EnchufeRF	9
-#define	Riego		14
-#define Riego_Temporizado 15
-#define Valvula		16
-#define ConsignaTemp	30
-#define Frio		20
-#define Calor		25
-#define Radiante	26
-#define	Persiana	35
-#define Toldo		36
-#define	Puerta		40
-#define	Ventilador	44
-#define	Piloto  	52
 
+
+#include   "Excontrol_def.h"
 
 /**************************************************************************
   #Librerias estandar shield ETHERNET. UNO Y MEGA.
@@ -33,6 +31,17 @@
   #include <SPI.h>
   #include <Ethernet.h>
   #include <EthernetUdp.h>
+  #include <Wire.h>
+
+/**************************************************************************
+  #     OBLIGATORIO UNO, NANO ATMEGA 328 
+  #     EN CASO MEGA USA MEMORIA EXTERNA.  
+  #Librerias estandar modulo Reloj.......  
+  
+  #define moduleDS3231 o #define moduleDS1307
+***************************************************************************/
+
+  #define moduleDS1307  
 
 /**************************************************************************
   #      SOLO MEGA
@@ -43,15 +52,7 @@
 //  #include <WiFiUdp.h>
 //  #define WIFI_SHIELD;
   
-/**************************************************************************
-  #     OBLIGATORIO UNO, NANO ATMEGA 328 
-  #     EN CASO MEGA USA MEMORIA EXTERNA.  
-  #Librerias estandar modulo Reloj.......  
-  
-  #define moduleDS3231 o #define moduleDS1307
-***************************************************************************/
-  #include <Wire.h>
-  #define moduleDS1307  
+
 
 /**************************************************************************
   #      SOLO MEGA
@@ -177,6 +178,17 @@ const boolean Enable_DaylightSavingTime  = true;
 // MODO ACTIVACION RELES.
   #define On HIGH
   #define Off LOW
+  
+/***************************************************************************
+ #En Arduino UNO pueden ser utilizados los siguientes pines.
+  0, 1  Si no utilizas el puerto serial.
+  2, 3, 4, 5, 6, 7, 8, 9.
+  Tambien pueden ser utilizados los pines.
+  ANO a AN3 como entradas o salidas, se puede usar el literal
+   14 a 17  indistintamente.
+  No usar AN4 y AN5 pertenecen al modulo RTC.
+
+****************************************************************************/  
 
 //Entradas con conmutador
 //Swicth Inputs
@@ -259,9 +271,7 @@ const boolean SecureConnection=false;
 #include "Common_functions.h"
 
 /******************************************************************************************************************************/
-void UserSetup() {
-    
-  
+void UserSetup() { 
 
 }
 
@@ -405,13 +415,8 @@ void LongInput(byte NumberInput){
 /*************************************************************/
 //Este evento se produce con una pulsación corta..
 //This event occurs with a short press.
-//AUTO GENERATED CODE
 /*************************************************************/
 
-	
-/*************************************************************/
-//END GENERATED CODE
-/*************************************************************/
   #ifdef DEBUG_MODE   
     Serial.print("Long Input Start ");
     Serial.print(NumberInput);
