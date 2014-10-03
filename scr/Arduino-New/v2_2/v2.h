@@ -51,10 +51,13 @@ byte EspRfrIp = 0;
 
 boolean Condicionados[10];              //Guarda el estado de los condicionados
 byte Consignas[10];                     //Guarda el valor de las consignas
+boolean Connecting=false;
+
 //Varibles Reloj
 byte second, minute, hour, dayOfWeek, dayOfMonth, month, year,minutoMemory,TipoDia;
-//boolean HoraRetrasa;
-unsigned long LastMsg;
+boolean HoraRetrasa;
+unsigned long Tim30Sg,TimSg,TimNow;
+
 
 //Variables Gestion Entradas Salidas
 unsigned long LastTimeSwicthInput[Number_SwicthInput];  //Ultima vez que la entrada cambio el estado
@@ -64,8 +67,7 @@ byte InState[Number_Input];  //Estado Entrada
 
 
 //Variables Control Alarmas
-boolean Alarms[]={false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,};
-
+byte Alarms[]={0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
 /////////////////////////////////////////////////////////////////////////////////////////////////////////
 //Configuracion Persianas
 /////////////////////////////////////////////////////////////////////////////////////////////////////////

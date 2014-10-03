@@ -18,7 +18,17 @@
  * 
  *  No esta probada en Arduino Leonardo.
  ****************************************************************************/
-
+/**************************************************************************
+  #Herramientas de depuracion.
+***************************************************************************/
+//Enable watch dog
+//habilita perro guardian
+//#define ENABLE_WATCH_DOG;
+//#define DEBUG_MODE
+//#define ARDUINO_MEGA
+#ifdef ENABLE_WATCH_DOG
+  #include <avr/wdt.h>
+#endif 
 
 
 
@@ -28,59 +38,34 @@
   #Librerias estandar shield ETHERNET. UNO Y MEGA.
 ***************************************************************************/
 
-  #include <SPI.h>
-  #include <Ethernet.h>
-  #include <EthernetUdp.h>
-  #include <Wire.h>
+#include <SPI.h>
+#include <Ethernet.h>
+#include <EthernetUdp.h>  
 
+//#define WIFI_SHIELD;
+
+//#ifdef WIFI_SHIELD
+//  #include <WiFi.h>
+//  #include <WiFiUdp.h>
+//#else
+//  #include <Ethernet.h>
+//  #include <EthernetUdp.h>  
+// // #include <utility/w5100.h>     // Advance Ethernet functions
+//#endif
+
+//#ifdef ARDUINO_MEGA
+//  #include <EEPROM.h>
+//  #include <SD.h>
+//  #define Historical_SD 
+//#else
 /**************************************************************************
   #     OBLIGATORIO UNO, NANO ATMEGA 328 
   #     EN CASO MEGA USA MEMORIA EXTERNA.  
   #Librerias estandar modulo Reloj.......  
-  
   #define moduleDS3231 o #define moduleDS1307
 ***************************************************************************/
-
-  #define moduleDS1307  
-
-/**************************************************************************
-  #      SOLO MEGA
-  #Librerias estandar shield WIFI.....
-**************************************************************************/
-//  #include <SPI.h>
-//  #include <WiFi.h>
-//  #include <WiFiUdp.h>
-//  #define WIFI_SHIELD;
-  
-
-
-/**************************************************************************
-  #      SOLO MEGA
-  #Librerias estandar Eeprom interna.
-***************************************************************************/
-
-//  #include <Wire.h>
-//  #include <EEPROM.h>
-//  #define EEPROM_INTERNA
-
-/**************************************************************************
-  #      SOLO MEGA
-  #Activar historicos en SD y las librerias necesarias. 
-***************************************************************************/
-// #include <SD.h>
-// #define Historical_SD 
-
-
-/**************************************************************************
-  #Herramientas de depuracion.
-***************************************************************************/
-
-//Enable watch dog
-//habilita perro guardian
-//#define ENABLE_WATCH_DOG;
-//#define DEBUG_MODE
-
-
+  #define moduleDS1307 
+  #include <Wire.h>
 
 
 //CONFIGURACION EQUIPOS INTALADOS, TERMOSTATOS, ENCHUFES RADIOFRECUENCIA 433MHZ, INFARROJOS.
@@ -90,7 +75,7 @@
 
 //#define LED_IR 
 //#define IR_RECIVE 
-//#define THERMOSTAT_DS18B20_NUMBER
+//#define THERMOSTAT_DS18B20_NUMBER 1
 //#define RECEIVER_433
 //#define TRANSMITER_433
 //#define ELECTRIC_OUTLET_433
@@ -137,12 +122,12 @@
   #include <DallasTemperature.h>
   #define TEMPERATURE_PRECISION 9
   #define ONE_WIRE_BUS 3           //Pin one wire donde estan conectadas las sondas
-  DeviceAddress Ds18B20Addres[THERMOSTAT_DS18B20_NUMBER] ={{0x28,0x36,0x0F,0xB5,0x05,0x00,0x00,0x0B},{0x28,0xBF,0x99,0xB5,0x05,0x00,0x00,0x5C}};
+  DeviceAddress Ds18B20Addres[THERMOSTAT_DS18B20_NUMBER] ={{0x28,0xAB,0x2A,0x46,0x04,0x00,0x00,0x88}};
   OneWire oneWire(ONE_WIRE_BUS);  // Setup a oneWire instance to communicate with any OneWire devices (not just Maxim/Dallas temperature ICs)
   DallasTemperature sensorTemp(&oneWire);// Pass our oneWire reference to Dallas Temperature.   
   boolean ThermostatCool[THERMOSTAT_DS18B20_NUMBER];
   boolean ThermostatHeat[THERMOSTAT_DS18B20_NUMBER];
-  float Temperature[]={22.2,22.4,22.6};
+  float Temperature[]={20};
 #endif 
 
 #ifdef RECEIVER_433
@@ -176,9 +161,9 @@ const boolean Enable_DaylightSavingTime  = true;
   #define INTERNAL_RESISTOR; 
 
 // MODO ACTIVACION RELES.
-  #define On HIGH
-  #define Off LOW
-  
+  const boolean On= true;
+  const boolean Off= false;
+
 /***************************************************************************
  #En Arduino UNO pueden ser utilizados los siguientes pines.
   0, 1  Si no utilizas el puerto serial.
@@ -210,6 +195,7 @@ const byte NumeroPersianas = 1;
 const byte Circuit_Type[] ={Ado_3Etapas, Ado_Digital, Enchufe, Persiana};
 
 
+
 /***********************************************************************************************************************/
 /***********************************************************************************************************************/
 //VARIABLES PARA CONTROL ESTADO CIRUCITOS
@@ -238,7 +224,8 @@ const byte Circuit_Type[] ={Ado_3Etapas, Ado_Digital, Enchufe, Persiana};
 //If you change the IP address will have to adjust in android application
 //If you change the Local Port address will have to adjust in android application
 //WIRELESS CONFIGURATION
-#ifdef WIFI_SHIELD enum Net_Security {OPEN,WEP,WPA};
+#ifdef WIFI_SHIELD 
+  enum Net_Security {OPEN,WEP,WPA};
   Net_Security Net_Type = WEP;
   char ssid[] = "YOUR-SSID"; //  your network SSID (name) 
   char pass[] = "YOUR-PASSWORD";    // your network password (use for WPA, or use as key for WEP)
@@ -279,17 +266,26 @@ void UserLoop(){
 
 
 }
+void LoopNewSecond(){
+  //Este evento se produce cada segundo.
+  //This event occurs every second.
 
+}
 
 void Loop30Sg(){
   //Este evento se produce cada 30sg.
   //This event occurs every 30SG.
+
 }
 
 void NewMinute(){
   //Este evento se produce cada cada minuto.
   //This event occurs every minute.
-
+  #ifdef DEBUG_MODE       
+    Serial.println("New Minute");   
+  #endif
+ if (Condicionados[0]){SetAlarm(0);ResetAlarm(0);}
+ 
 }
 /******************************************************************************************************************************/
  /***********************************************************************************************************************/
@@ -365,7 +361,7 @@ void ShortInput(byte NumberInput){
 		case 2: 
 		     circuits[0].Value=3; break;
 		case 3: 
-		     circuits[0].Value=0; break;}
+		     circuits[0].Value=1; break;}
         }
 
 	//CIRCUITO NUMERO 1
@@ -416,7 +412,7 @@ void LongInput(byte NumberInput){
 //Este evento se produce con una pulsación corta..
 //This event occurs with a short press.
 /*************************************************************/
-
+  if (NumberInput==0)circuits[0].Value=0; 
   #ifdef DEBUG_MODE   
     Serial.print("Long Input Start ");
     Serial.print(NumberInput);
@@ -453,6 +449,7 @@ void OutControl(){
 //END GENERATED CODE
 /*************************************************************/
 }
+
 
 char* RunCommand(byte CommandNumber){
   //Este evento se produce cuando se ejecuta un comando desde el app
@@ -495,7 +492,7 @@ String GetAlarmsName(byte Number){
 //AUTO GENERATED CODE
 /*************************************************************/
 
-	if (Number==0){return "Reserva";}
+	if (Number==0){return "CARAMBA CARAMBITA";}
 	if (Number==1){return "Reserva";}
 	if (Number==2){return "Reserva";}
 	if (Number==3){return "Reserva";}
