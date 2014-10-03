@@ -20,6 +20,7 @@ extern void LongInputEnd(byte NumberInput);
 extern void LongInput(byte NumberInput);
 extern void ShortInput(byte NumberInput);
 extern void SwicthStateChange(byte NumberInput);
+extern void LoopNewSecond();
 
 // PROTOTIPOS
 void CargaHora();
@@ -35,15 +36,19 @@ void connectAndRfr();
 void RecepcionPaqueteUDP();
 void BajarPersiana(byte);
 void CargaPosicionPersiana(byte NPersiana);
-
-
+boolean CreateCabHTTP(String URL, String Key2);
+boolean ComproRespuestaHTTP();
+void SystemLoop();
+void ConexionWifi();
+void InitDS18B20();
+void RefreshTemperature();
 /*************************************************************************** 
   SUBRUTINAS TRATAMIENTO EEPROM
   DETECTA EL MICROCONTOLADOR DE LA TARJETA CONFIGURADA EN EL IDE ARDUINO 
   CAMBIAMOS EL USO DE EEPROM INTERNO O EXTERNO 
   ACTIVADO MODO USO EEPROM EXTERNA !!!! 
 ****************************************************************************/
-#if (defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__)) &&  defined(EEPROM_INTERNA)
+#ifdef ARDUINO_MEGA
 //    ARDUINO MEGA..........................................................   
     
     #define EepromRead   EEPROM.read
@@ -183,9 +188,13 @@ void getDateDs1307(byte *second,
 void setup()
 {
   
- 
+  #ifdef DEBUG_MODE
+     // byte c;  
+      Serial.begin(9600);      
+      Serial.println("System started");
+     #endif
   
-  #ifdef HISTORICAL_SD
+  #ifdef HISTORICAL_SD 
     initPinSD();
     initSD();
   #endif
@@ -216,9 +225,7 @@ void setup()
   byte ControlRetroaviso=0;
   byte c;  
   //enum CircuitsTypes {Persiana,ConsignaTemp,};
-   #ifdef DEBUG_MODE
-     // byte c;  
-      Serial.begin(9600);      
+   #ifdef DEBUG_MODE   
       Serial.print("System started with ");
       Serial.print(Number_Circuit);
       Serial.print(" circuit, types ");
@@ -297,18 +304,14 @@ void setup()
     SwicthState[i] = digitalRead(PinSwicthInput[i]);
 	LastTimeSwicthInput[i]=millis();	
   }
-  
-  for (int i=0; i<Number_Output;i++){
-	pinMode(PinOutput[i], OUTPUT);
-	digitalWrite(PinOutput[i],LOW);
-  }
-  
-  for (int i=0; i<10;i++){
-	Consignas[i]=EepromRead(940 + i);
-  }  
+  int i;
+ 
+  for (int i=0; i<Number_Output;i++){pinMode(PinOutput[i], OUTPUT);digitalWrite(PinOutput[i],Off);} 
+  for (i=0; i<10;i++){Consignas[i]=EepromRead(940 + i);}  
+  for (i=0;i<20;i++){Alarms[i]=EepromRead(3880+i);if (Alarms[i]>=5){Alarms[i]=0;}}
   //Fijamo valores y posicion inicio persianas
   //Fijamos el tiempo de subida bajada Persianas
-  //Se encuentran apartir de la direccion 3880 
+  //Se encuentran apartir de la direccion 480 
   ReiniciarTiempoPersianas();
    
   
@@ -324,9 +327,10 @@ void setup()
     WiFi.config(ip);
     ConexionWifi();
   #else
-    //Ethernet.begin(mac);//Borrar esta linea vale la de abajo
+    
 //     W5100.setRetransmissionTime(0x07D0);  //setRetransmissionTime sets the Wiznet's timeout period, where each unit is 100us, so 0x07D0 (decimal 2000) means 200ms.
 //     W5100.setRetransmissionCount(3);      //setRetransmissionCount sets the Wiznet's retry count.
+     //Ethernet.begin(mac);//DHCP MODE  
      Ethernet.begin(mac,ip);
      Udp.begin(localPort);
   #endif
@@ -347,8 +351,28 @@ void setup()
   CargaHora(); 
   UserSetup();
 }
-
-
+#ifdef WIFI_SHIELD
+void ConexionWifi() {
+    #ifdef DEBUG_MODE   
+        Serial.println("Iniciando Conexon Wifi");  
+    #endif
+    
+    if (Net_Type == OPEN){WiFi.begin(ssid);  }//Open Network
+    if (Net_Type == WEP){WiFi.begin(ssid, pass); }//WPA NETWORK
+    if (Net_Type == WPA){WiFi.begin(ssid, keyIndex, pass); }//WEP 
+    
+    #ifdef ENABLE_WATCH_DOG
+      wdt_disable();
+    #endif 
+    
+    delay(10000);  //Esperamos 10 segundos para conexion
+    #ifdef ENABLE_WATCH_DOG
+      wdt_enable(WDTO_8S); 
+    #endif 
+    
+    TimConexion=millis();
+}
+#endif
 
 #ifdef RETROAVISOS 
 void ComprobarRetroavisos(){   
@@ -410,17 +434,14 @@ void CheckSwicth(){
 }
 // NO ENTENDER????
 void GestionCircuitos(){
+      
   //  ,,,,,,,Persiana,ConsignaTemp,,
   for (int c=0;c<Number_Circuit;c++){
+    
     if (circuits[c].Type!=Reserva){
-      if ((circuits[c].Type==Ado_Digital)||(circuits[c].Type==Puerta)||(circuits[c].Type==Enchufe)||(circuits[c].Type==EnchufeRF)||(circuits[c].Type==Riego)||(circuits[c].Type==Riego_Temporizado)||(circuits[c].Type==Frio)||(circuits[c].Type==Calor)||(circuits[c].Type==Valvula)||(circuits[c].Type==Radiante)||(circuits[c].Type==Ventilador)){
-        if (circuits[c].Value>=1){
-          circuits[c].Out1_Value=On;circuits[c].Out2_Value=Off;
-        }
-        else{
-          circuits[c].Out1_Value=Off;
-          circuits[c].Out2_Value=Off;
-        }
+      if ((circuits[c].Type==Ado_Digital)||(circuits[c].Type==Puerta)||(circuits[c].Type==Enchufe)||(circuits[c].Type==EnchufeRF)||(circuits[c].Type==Riego)||(circuits[c].Type==Riego_Temporizado)||(circuits[c].Type==Frio)||(circuits[c].Type==Calor)||(circuits[c].Type==Valvula)||(circuits[c].Type==Radiante)||(circuits[c].Type==Ventilador)||(circuits[c].Type==Piloto)) {
+        if (circuits[c].Value>=1){circuits[c].Out1_Value=On;circuits[c].Out2_Value=Off;}
+        else{circuits[c].Out1_Value=Off;circuits[c].Out2_Value=Off;}
       }
       if (circuits[c].Type==Ado_3Etapas){
         switch (circuits[c].Value) {
@@ -443,16 +464,11 @@ void GestionCircuitos(){
         }
       }
       if ((circuits[c].Type==Persiana)||(circuits[c].Type==Toldo)){//PersianaS
-       circuits[c].Out1_Value=Off;
-       circuits[c].Out2_Value=Off;
+       circuits[c].Out1_Value=Off;circuits[c].Out2_Value=Off;
        if ((OutDowPersiana[circuits[c].Device_Number]==true)||(OutUpPersiana[circuits[c].Device_Number]==true))
        {
-         if ((OutDowPersiana[circuits[c].Device_Number]==true)&&(OutUpPersiana[circuits[c].Device_Number]==false)){
-           circuits[c].Out1_Value=On; circuits[c].Out2_Value=On;
-         }
-         if ((OutDowPersiana[circuits[c].Device_Number]==false)&&(OutUpPersiana[circuits[c].Device_Number]==true)){
-           circuits[c].Out1_Value=On; circuits[c].Out2_Value=Off;
-         }     
+         if ((OutDowPersiana[circuits[c].Device_Number]==true)&&(OutUpPersiana[circuits[c].Device_Number]==false)){circuits[c].Out1_Value=On; circuits[c].Out2_Value=On;}
+         if ((OutDowPersiana[circuits[c].Device_Number]==false)&&(OutUpPersiana[circuits[c].Device_Number]==true)){circuits[c].Out1_Value=On; circuits[c].Out2_Value=Off;}     
        }
       }
       //Gestion Enchufes Radio Frecuencia
@@ -460,12 +476,7 @@ void GestionCircuitos(){
          if (circuits[c].Type==EnchufeRF){
            if (circuits[c].Value!=circuits[c].OldValue){
              
-             if (circuits[c].Value==1){
-               Electric_Outlet_Control(circuits[c].Device_Number+1,true);
-             }
-             else{
-               Electric_Outlet_Control(circuits[c].Device_Number+1,false);
-             }
+             if (circuits[c].Value==1){Electric_Outlet_Control(circuits[c].Device_Number+1,true);}else{Electric_Outlet_Control(circuits[c].Device_Number+1,false);}
              circuits[c].OldValue=circuits[c].Value;
            }
          }
@@ -602,17 +613,8 @@ void GestionMovPersianas(byte NPersiana)
   }
 }
 
-void ReiniciarTiempoPersianas()
-{
-	for ( byte c =0; c<NumeroPersianas; c++){TimUpPersiana[c]=(EepromRead(3880 + c))* 1000000; TimDowPersiana[c]=(EepromRead(3890 + c))* 1000000;}
-}
-
-void ReiniciarPosicionPersiana(byte NumPersiana)
-{
-	TiempoPosPersianaUp[NumPersiana]=0;TiempoPosPersianaDown[NumPersiana]=TimDowPersiana[NumPersiana];circuits[LocalizadorPersiana[NumPersiana]].Value=100;}
-
-
-
+void ReiniciarTiempoPersianas(){for ( byte c =0; c<NumeroPersianas; c++){TimUpPersiana[c]=(EepromRead(480 + c))* 1000000; TimDowPersiana[c]=(EepromRead(510 + c))* 1000000;}}
+void ReiniciarPosicionPersiana(byte NumPersiana){TiempoPosPersianaUp[NumPersiana]=0;TiempoPosPersianaDown[NumPersiana]=TimDowPersiana[NumPersiana];circuits[LocalizadorPersiana[NumPersiana]].Value=100;}
 void CargaPosicionPersiana(byte NPersiana)
 {
   PosicionPersiana[NPersiana]=circuits[LocalizadorPersiana[NPersiana]].Value;
@@ -655,6 +657,8 @@ void RecepcionPaqueteUDP(){
   char adata[1];
   byte data;
   char packetBuffer[UDP_TX_PACKET_MAX_SIZE]; 
+  
+  //if (Connecting==true){return;}//hay que probarlo con y sin!
   #ifdef DEBUG_MODE
 	//Serial.println(F("freeUDP()="));
 	//Serial.println(freeMemory());
@@ -662,6 +666,10 @@ void RecepcionPaqueteUDP(){
   p = Udp.parsePacket();  
   
   if(p>0){    
+     #ifdef DEBUG_MODE        
+      Serial.println("UDP Packet recive");   
+    #endif
+    
     Udp.read(packetBuffer,UDP_TX_PACKET_MAX_SIZE);
     //Test secure connection, return if not same.
     if  (SecureConnection){
@@ -677,6 +685,17 @@ void RecepcionPaqueteUDP(){
       CommonOrders(packetBuffer[7]);
       strcpy(packetBuffer , "COMCOMOK");  
     }
+    else if (strncmp(packetBuffer, "ALRM", 4)==0){
+      strcpy(packetBuffer,"ESAL"); 
+      for (byte  i = 4; i<24;i++){packetBuffer[i]=Alarms[i-4]+1;}    
+      packetBuffer[24]='\0';
+    }
+    else if (strncmp(packetBuffer, "SETNOTI", 7)==0){
+       byte pos=packetBuffer[7]-1;
+       Alarms[pos]=packetBuffer[8]-1;strcpy(packetBuffer, "WIALMO");  
+       EepromWrite(3880+pos,Alarms[pos]);
+    }
+       
     else if (strncmp(packetBuffer, "SVAL", 4)==0){
       data = packetBuffer[5]-1;    
       circuits[packetBuffer[4]-1].Value=data;
@@ -684,7 +703,45 @@ void RecepcionPaqueteUDP(){
       packetBuffer[0]=EXTERNAL_REPLY;
     }    
     else if (strncmp(packetBuffer, "VACT", 4)==0){
-      EnvioEstadoActual();
+      int LongCad;
+      #ifdef THERMOSTAT_DS18B20_NUMBER
+        LongCad=35+THERMOSTAT_DS18B20_NUMBER;
+      #else  
+        LongCad=35;
+      #endif 
+    
+      char Respuesta[LongCad];
+      byte  indexstr,c;
+    
+      strcpy(Respuesta, "VVAL"); 
+      indexstr=4;
+    
+      for (c=0; c<30;c++)
+      {
+         if ((c)<Number_Circuit){
+           Respuesta[indexstr]=circuits[c].Value+1;
+         }
+         else{
+           Respuesta[indexstr]=1;
+         }  
+         indexstr++;
+      }
+  
+    #ifdef THERMOSTAT_DS18B20_NUMBER
+      int v;
+      for (int t=0; t<THERMOSTAT_DS18B20_NUMBER;t++)
+      {
+        if ((Temperature[t] >=1)&&(Temperature[t]<=49)){
+          v =(Temperature[t]*10)/2;
+          Respuesta[indexstr++]=v+1;
+        }
+        else{
+          Respuesta[indexstr++]=1;
+        }
+      }
+    #endif 
+      Respuesta[indexstr]='\0';
+      EnviarRespuesta(Respuesta); 
       packetBuffer[0]=EXTERNAL_REPLY;
     }
 	// MODIFICADO cambio total de estructura.
@@ -910,8 +967,8 @@ void RecepcionPaqueteUDP(){
     else if (strncmp(packetBuffer, "TIMPERSIANA", 11)==0){
       strcpy(packetBuffer, "LECPE");      
       indexstr=5;       
-      p=3880;
-      for (c=0; c<20; c++){
+      p=480;
+      for (c=0; c<60; c++){
          packetBuffer[indexstr++]=EepromRead(p++)+1;
        }
        packetBuffer[indexstr]='\0';      
@@ -934,9 +991,9 @@ void RecepcionPaqueteUDP(){
        packetBuffer[indexstr]='\0';    
     }     
     else if (strncmp(packetBuffer, "WPERS", 5)==0){
-      p=3880;
+      p=480;
       indexdata=5;
-      for (byte  i = 0; i<20;i++){
+      for (byte  i = 0; i<60;i++){
         EepromWrite(p++, packetBuffer[indexdata++]-1);
       }
       ReiniciarTiempoPersianas();
@@ -1024,8 +1081,14 @@ void RecepcionPaqueteUDP(){
 //MODIFICADO.
 void EnvioEstadoActual()
 {
- 
-  char Respuesta[40];
+  int LongCad;
+  #ifdef THERMOSTAT_DS18B20_NUMBER
+    LongCad=35+THERMOSTAT_DS18B20_NUMBER;
+  #else  
+    LongCad=35;
+  #endif 
+  
+  char Respuesta[LongCad];
   byte  indexstr,c;
   
   strcpy(Respuesta, "EVAL"); 
@@ -1068,11 +1131,8 @@ void SelectScene(byte Dir)
 void CargaHora()
 {
   getDateDs1307(&second, &minute, &hour, &dayOfWeek, &dayOfMonth, &month, &year);
-  LastMsg=millis();
-  if (minute != minutoMemory){
-    ActualizaMinuto();
-    NewMinute();
-  }
+  Tim30Sg=millis();
+  if (minute != minutoMemory){ActualizaMinuto();NewMinute();  }
 }
 
 void ActualizaMinuto()
@@ -1086,13 +1146,17 @@ void ActualizaMinuto()
   if(Enable_DaylightSavingTime==true && minute==0){
     if(month==3 && dayOfMonth >= 26 && dayOfWeek == 7 && hour==2){
       hour = 3;
+      setDateDs1307(second, minute, hour, dayOfWeek, dayOfMonth, month, year);
     }
     if(month==10 && dayOfMonth >= 26 && dayOfWeek == 7 && hour==2){
-      hour = 1;
+      if (HoraRetrasa==false){
+        hour = 1;HoraRetrasa=true;
+        setDateDs1307(second, minute, hour, dayOfWeek, dayOfMonth, month, year);
+      }
     }
-    setDateDs1307(second, minute, hour, dayOfWeek, dayOfMonth, month, year);
-  }
     
+  }
+  if (hour==3){HoraRetrasa=false;}
       //Adelanta la hora.Apartir del dia 25 de Marzo, busca el primer domingo
       //y cuando se han las 2 de la noche adelanta el reloj una hora
       //PENDIENTE ESTO ESTA MAL CAMBIARA LA HORA CADA MINUTO.
@@ -1202,108 +1266,108 @@ void ActualizaMinuto()
 /******************************************************************/
 // REFRESCAR
 /*****************************************************************/
-
-void CreateCabHTTP(String URL, String Key2)
-{
+/******************************************************************/
+// REFRESCAR
+/*****************************************************************/
+boolean Notification(String Text){
+  if (Mail==""){return true;}
+  if (Connecting){return false;}
+  #ifdef DEBUG_MODE   
+    Serial.println("Notification = "+ Text);               
+  #endif
+  Text.replace(" ", "%20%20");
+  boolean result =CreateCabHTTP("GET http://excontrol.es/Users/Noti.aspx?Mail=",Text);
+  if (result){result=ComproRespuestaHTTP();}
+  else{
+    client.stop();
+    client.flush();
+    Connecting=false;
+    #ifdef DEBUG_MODE   
+      Serial.println("Server no aviable");               
+    #endif
+  }
+  return result;
+}
+void connectAndRfr(){
+  EspRfrIp=50;
+  if (Connecting){return;}   
+  if (Mail==""){return;}
+  
+  boolean result = CreateCabHTTP("GET http://excontrol.es/Users/IpSet.aspx?Mail=","");
+  if (result){ComproRespuestaHTTP(); }
+}
+boolean CreateCabHTTP(String URL, String Key2){
+  #ifdef DEBUG_MODE   
+    Serial.println("Coneccting http server");               
+  #endif
   if (client.connect("www.excontrol.es", 80)) {
     client.print(URL);
     if (Key2==""){client.print(Mail + "&Key=" + Key);}
     else{client.print(Mail + "&Key=" + Key + "&Key2=" + Key2);}
     client.println(" HTTP/1.0");
     client.println();
+    Connecting=true;
+    #ifdef DEBUG_MODE   
+      Serial.println("Coneccting completed");               
+    #endif
+    return true;
   }
+  Connecting=false;
+  return false;
 }
-
-void ComproRespuestaHTTP()
-{
-  int Reintento;
-  Reintento=0;
-
+boolean ComproRespuestaHTTP(){
+  int Reintento=0;
   while(true){
     if (client.available()) {
       int c;
-      for (c=0;c<50;c++){char c = client.read();Serial.print(c);}
+      for (c=0;c<5;c++){char c = client.read();}
       client.stop();
       client.flush();
-      return;
+      EspRfrIp=50;
+      Connecting=false;
+      #ifdef DEBUG_MODE   
+          Serial.println("TCP Connection Complete");               
+       #endif
+      return true;
     }
     else{
-      loop();
+      SystemLoop();
       delay(10);
-      if (Reintento >= 100 ){
+      if (Reintento >= 700 ){
+        #ifdef DEBUG_MODE   
+          Serial.println("Time Out TCP");               
+        #endif
         client.stop();
         client.flush();
-        return;
+        Connecting=false;
+        return false;
       }
     }
+    Reintento++;
   }
 }
-
-
-
-void Notification(String Text)
-{
-  if (Mail==""){return;}
-  
-  #ifdef DEBUG_MODE   
-    Serial.println("Notification = "+ Text);               
-  #endif
-  Text.replace(" ", "%20%20");
-  CreateCabHTTP("GET http://excontrol.es/Users/Noti.aspx?Mail=",Text);
-  ComproRespuestaHTTP(); 
-}
-
-void connectAndRfr()
-{
-  EspRfrIp=50;
-  if (Mail==""){return;}
-  CreateCabHTTP("GET http://excontrol.es/Users/IpSet.aspx?Mail=","");
-  ComproRespuestaHTTP();   
-}
-
-
 
 
 #ifdef THERMOSTAT_DS18B20_NUMBER
   void InitDS18B20(){
       sensorTemp.begin();
-      for (int c=0;c<THERMOSTAT_DS18B20_NUMBER;c++){
-        sensorTemp.setResolution(Ds18B20Addres[c], TEMPERATURE_PRECISION);
-        ThermostatHeat[c]=false;
-        ThermostatCool[c]=false;
-      }
-      sensorTemp.setWaitForConversion(true);    //First conversión wait for data
-      sensorTemp.requestTemperatures();         //Active 
-      RefreshTemperature();                     //Save data in 
-      sensorTemp.setWaitForConversion(false);   
+      for (int c=0;c<THERMOSTAT_DS18B20_NUMBER;c++){sensorTemp.setResolution(Ds18B20Addres[c], TEMPERATURE_PRECISION);ThermostatHeat[c]=false;ThermostatCool[c]=false;}
+      sensorTemp.setWaitForConversion(true);
+      sensorTemp.requestTemperatures();
+      RefreshTemperature();
+      sensorTemp.setWaitForConversion(false);
    }
 
-  void RefreshTemperature(){
-     for (int c=0;c<THERMOSTAT_DS18B20_NUMBER;c++){
-         Temperature[c] = sensorTemp.getTempC(Ds18B20Addres[c]);
-     }
+   void RefreshTemperature(){
+     for (int c=0;c<THERMOSTAT_DS18B20_NUMBER;c++){Temperature[c] = sensorTemp.getTempC(Ds18B20Addres[c]);}
      for (int c=0;c<Number_Circuit;c++){      
        if (circuits[c].Type==ConsignaTemp){         
          float RangoTemp =((float) circuits[c].Value )+ 0.5;        
-         if (Temperature[circuits[c].Device_Number]   >= RangoTemp ){
-             ThermostatCool[circuits[c].Device_Number]=true;
-          }
-         else{
-           RangoTemp = RangoTemp - 1;
-           if (Temperature[circuits[c].Device_Number] <= RangoTemp){
-               ThermostatCool[circuits[c].Device_Number]=false;
-             }
-         }
+         if (Temperature[circuits[c].Device_Number]   >= RangoTemp ){ThermostatCool[circuits[c].Device_Number]=true;}
+         else{RangoTemp = RangoTemp - 1;if (Temperature[circuits[c].Device_Number] <= RangoTemp){ThermostatCool[circuits[c].Device_Number]=false;}}
          RangoTemp =((float) circuits[c].Value) - 0.5;
-         if (Temperature[circuits[c].Device_Number]<= RangoTemp ){
-           ThermostatHeat[circuits[c].Device_Number]=true;
-         } 
-         else{
-           RangoTemp = RangoTemp +1;
-           if (Temperature[circuits[c].Device_Number] >= RangoTemp){
-             ThermostatHeat[circuits[c].Device_Number]=false;
-           }
-         }  
+         if (Temperature[circuits[c].Device_Number]<= RangoTemp ){ThermostatHeat[circuits[c].Device_Number]=true;} 
+         else{RangoTemp = RangoTemp +1;if (Temperature[circuits[c].Device_Number] >= RangoTemp){ThermostatHeat[circuits[c].Device_Number]=false;}}  
        }
      }
      sensorTemp.requestTemperatures();
@@ -1319,41 +1383,30 @@ char* CharNull(char* Val){
       return Resultado;
 }
 
-#ifdef WIFI_SHIELD
-	void ConexionWifi() {
-		#ifdef DEBUG_MODE   
-			Serial.println("Iniciando Conexon Wifi");  
-		#endif
-		
-		if (Net_Type == OPEN){WiFi.begin(ssid);  }//Open Network
-		if (Net_Type == WEP){WiFi.begin(ssid, pass); }//WPA NETWORK
-		if (Net_Type == WPA){WiFi.begin(ssid, keyIndex, pass); }//WEP 
-		
-		
-		wdt_disable();
-		delay(10000);  //Esperamos 10 segundos para conexion
-		wdt_enable(WDTO_8S); 
 
-		TimConexion=millis();
-
-	}
-#endif
 
 //Funciones alarmas
-void SetAlarm(int Number){
-  if (Number<=19){
-    if(Alarms[Number]==false){
-      Notification(GetAlarmsName(Number));
-      Alarms[Number]=true;
-    }  
-  }  
+void SetAlarm(int Number){if ((Number<=19)&&(Alarms[Number]==0)){Alarms[Number]=1;}}
+void ResetAlarm(int Number){if ((Number<=19)&&(Alarms[Number]==2)){Alarms[Number]=0;}}
+
+void loop(){
+  if((TimNow - TimSg) >= 1000) {
+    LoopNewSecond();
+    TimSg=TimNow;
+    if (Connecting==false){
+      for (int a=0;a<=19;a++){
+        if (Alarms[a]==1){
+          boolean res=Notification(GetAlarmsName(a));
+          if (res){Alarms[a]=2;}
+          break;
+        }  
+      }
+    }
+  }
+  SystemLoop();
 }
 
-void ResetAlarm(int Number){
-	if (Number<=19){Alarms[Number]=false;}
-}
-
-void loop()
+void SystemLoop()
 {
   // Actualiza valor retroavisos.
   #ifdef RETROAVISOS 
@@ -1376,12 +1429,11 @@ void loop()
       Recepcion433Mhz();
   #endif
   
- 
-  // Recarga por overflow de millis.
-  if(millis() < LastMsg ){
-    CargaHora();
-  }
-  if((millis() - LastMsg) >= 30000) {
+  TimNow=millis();     
+   if(TimNow < TimSg ) {TimSg=TimNow;}
+   if(TimNow < Tim30Sg ) {CargaHora();}
+   if((TimNow - Tim30Sg) >= 30000) {
+
     #ifdef THERMOSTAT_DS18B20_NUMBER
       RefreshTemperature();
     #endif
