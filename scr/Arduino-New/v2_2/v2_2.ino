@@ -185,14 +185,14 @@ byte PinInput[]={2,3,4};
 
 //Define pines de Salidas
 //Outputs pin
-byte PinOutput[]={6,7,8,9};
+byte PinOutput[]={6,7,8,14,15};
 
 //Numero de Persianas
 //Number of blind
 const byte NumeroPersianas = 1;
 
 // Circuitos 
-const byte Circuit_Type[] ={Ado_3Etapas, Ado_Digital, Enchufe, Persiana};
+const byte Circuit_Type[] ={Ado_3Etapas, Ado_Digital ,Persiana };
 
 
 
@@ -312,14 +312,14 @@ void NewMinute(){
 void SwicthStateChange(byte NumberInput){
 //AUTO GENERATED CODE
 /*************************************************************/
-	//CIRCUITO NUMERO 1
-	//Conmutador
+  //CIRCUITO NUMERO 0
+  //Conmutador
   if (NumberInput==0){
-    if (circuits[2].Value==1){
-      circuits[2].Value=0;
+    if (circuits[1].Value==1){
+      circuits[1].Value=0;
     }
     else{
-      circuits[2].Value=1;
+      circuits[1].Value=1;
     }
   }
 
@@ -352,7 +352,7 @@ void ShortInput(byte NumberInput){
 	//CIRCUITO NUMERO 0
 	//Circuito 
 	if (NumberInput==0){
-            
+        
 		switch (circuits[0].Value){
 		case 0:
 		     circuits[0].Value=1;break;
@@ -361,18 +361,18 @@ void ShortInput(byte NumberInput){
 		case 2: 
 		     circuits[0].Value=3; break;
 		case 3: 
-		     circuits[0].Value=1; break;}
-        }
+		     circuits[0].Value=1; break;
+                }
+              }
 
 	//CIRCUITO NUMERO 1
-	//Circuito 
+	//Persiana
     if (NumberInput==1){
-       if (circuits[1].Value==1){
-         circuits[1].Value=0;
-       }else{
-         circuits[1].Value=1;
-       }
-     }
+      circuits[2].Value=50;
+    }
+     if (NumberInput==2){
+      circuits[2].Value=0;
+    }
 /*************************************************************/
 //END GENERATED CODE
 /*************************************************************/
@@ -412,7 +412,9 @@ void LongInput(byte NumberInput){
 //Este evento se produce con una pulsación corta..
 //This event occurs with a short press.
 /*************************************************************/
-  if (NumberInput==0)circuits[0].Value=0; 
+  if (NumberInput==0)
+    circuits[0].Value=0; 
+    
   #ifdef DEBUG_MODE   
     Serial.print("Long Input Start ");
     Serial.print(NumberInput);
@@ -436,15 +438,22 @@ void OutControl(){
 	//CIRCUITO NUMERO 0
 	//Circuito 
 	//Out 1
-	digitalWrite(PinOutput[0],circuits[0].Out1_Value);
+	digitalWrite(PinOutput[3],circuits[0].Out1_Value);
 	//Out 2
-	digitalWrite(PinOutput[1],circuits[0].Out2_Value);
+	digitalWrite(PinOutput[4],circuits[0].Out2_Value);     
 
 	//CIRCUITO NUMERO 1
 	//Conmutador
 	//Out 1
 	digitalWrite(PinOutput[2],circuits[1].Out1_Value);
 
+        //CIRCUITO NUMERO 2
+	//Persiana
+	//Out 1
+	digitalWrite(PinOutput[0],circuits[2].Out1_Value);
+        digitalWrite(PinOutput[1],circuits[2].Out2_Value);
+
+     
 /*************************************************************/
 //END GENERATED CODE
 /*************************************************************/

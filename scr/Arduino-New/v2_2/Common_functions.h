@@ -30,7 +30,7 @@ void EnvioEstadoActual();
 void SelectScene(byte);
 void ActualizaMinuto();
 void SubirPersiana(byte NPersiana);
-void CargarTiempoPersianas();
+//void CargarTiempoPersianas();
 void ReiniciarTiempoPersianas();
 void connectAndRfr();
 void RecepcionPaqueteUDP();
@@ -186,14 +186,8 @@ void getDateDs1307(byte *second,
 }
 
 void setup()
-{
-  
-  #ifdef DEBUG_MODE
-     // byte c;  
-      Serial.begin(9600);      
-      Serial.println("System started");
-     #endif
-  
+{  
+
   #ifdef HISTORICAL_SD 
     initPinSD();
     initSD();
@@ -225,7 +219,8 @@ void setup()
   byte ControlRetroaviso=0;
   byte c;  
   //enum CircuitsTypes {Persiana,ConsignaTemp,};
-   #ifdef DEBUG_MODE   
+   #ifdef DEBUG_MODE
+      Serial.begin(9600);   
       Serial.print("System started with ");
       Serial.print(Number_Circuit);
       Serial.print(" circuit, types ");
@@ -275,8 +270,11 @@ void setup()
     Serial.println();
   #endif
 
-  for (int per=0; per<NumeroPersianas; per++){InDowPersiana[per]=false;InUpPersiana[per]=false;}  
-
+  for (int per=0; per<NumeroPersianas; per++){
+    InDowPersiana[per]=false;
+    InUpPersiana[per]=false;
+  }  
+  
   //Fijamos pines entrada salida
   unsigned long currenMillis = millis();
   #ifdef RETROAVISOS     
@@ -302,13 +300,27 @@ void setup()
      digitalWrite(PinSwicthInput[i], HIGH);       // turn on pullup resistors
     #endif
     SwicthState[i] = digitalRead(PinSwicthInput[i]);
-	LastTimeSwicthInput[i]=millis();	
+	LastTimeSwicthInput[i]=millis();
   }
   int i;
- 
-  for (int i=0; i<Number_Output;i++){pinMode(PinOutput[i], OUTPUT);digitalWrite(PinOutput[i],Off);} 
-  for (i=0; i<10;i++){Consignas[i]=EepromRead(940 + i);}  
-  for (i=0;i<20;i++){Alarms[i]=EepromRead(3880+i);if (Alarms[i]>=5){Alarms[i]=0;}}
+  
+  // Config pinOuts 
+  for (i=0; i<Number_Output;i++){
+    pinMode(PinOutput[i], OUTPUT);
+    digitalWrite(PinOutput[i],Off);
+  }
+  
+  for (i=0; i < N_SETPOINTS; i++)
+  {
+    Consignas[i]=EepromRead(EM_SETPOINTS_OFSSET + i);
+  }
+  //Restore alarm resgisters.
+  for (i=0; i < N_ALARMS; i++){
+    Alarms[i]=EepromRead(EM_ALARMS_OFSSET+i);
+    if (Alarms[i]>=5){
+      Alarms[i]=0;
+    }
+  }
   //Fijamo valores y posicion inicio persianas
   //Fijamos el tiempo de subida bajada Persianas
   //Se encuentran apartir de la direccion 480 
@@ -348,7 +360,11 @@ void setup()
    
 //Inicio control Horarios
   Wire.begin();
+  #ifdef DEBUG_MODE
+     Serial.print(">hora");     
+   #endif
   CargaHora(); 
+
   UserSetup();
 }
 #ifdef WIFI_SHIELD
@@ -420,11 +436,11 @@ void CheckSwicth(){
         SwicthState[i]=reading;
         SwicthStateChange(i);
         #ifdef DEBUG_MODE   
-         Serial.print("Swicth change ");
+         Serial.print(F("Swicth change "));
          Serial.print(i);
-         Serial.print(" to ");
+         Serial.print(F(" to "));
          Serial.print(reading);
-         Serial.print(" pin ");
+         Serial.print(F(" pin "));
          Serial.println(PinSwicthInput[i]);
         #endif
 
@@ -432,6 +448,7 @@ void CheckSwicth(){
      }
   }
 }
+
 // NO ENTENDER????
 void GestionCircuitos(){
       
@@ -440,31 +457,47 @@ void GestionCircuitos(){
     
     if (circuits[c].Type!=Reserva){
       if ((circuits[c].Type==Ado_Digital)||(circuits[c].Type==Puerta)||(circuits[c].Type==Enchufe)||(circuits[c].Type==EnchufeRF)||(circuits[c].Type==Riego)||(circuits[c].Type==Riego_Temporizado)||(circuits[c].Type==Frio)||(circuits[c].Type==Calor)||(circuits[c].Type==Valvula)||(circuits[c].Type==Radiante)||(circuits[c].Type==Ventilador)||(circuits[c].Type==Piloto)) {
-        if (circuits[c].Value>=1){circuits[c].Out1_Value=On;circuits[c].Out2_Value=Off;}
-        else{circuits[c].Out1_Value=Off;circuits[c].Out2_Value=Off;}
+        if (circuits[c].Value>=1){
+          circuits[c].Out1_Value=On;
+          circuits[c].Out2_Value=Off;
+        }
+        else{
+          circuits[c].Out1_Value=Off;
+          circuits[c].Out2_Value=Off;
+        }
       }
+      
+      
       if (circuits[c].Type==Ado_3Etapas){
-        switch (circuits[c].Value) {
-        case 0:    
-          circuits[c].Out1_Value=Off;circuits[c].Out2_Value=Off;
+        switch (circuits[c].Value) 
+        {
+          case 0:    
+            circuits[c].Out1_Value=Off;
+            circuits[c].Out2_Value=Off;
           break;
-        case 1:    
-          circuits[c].Out1_Value=On;circuits[c].Out2_Value=Off;
+          case 1:    
+            circuits[c].Out1_Value=On;
+            circuits[c].Out2_Value=Off;
           break;
-        case 2:    
-         circuits[c].Out1_Value=Off;circuits[c].Out2_Value=On; 
+          case 2:    
+           circuits[c].Out1_Value=Off;
+           circuits[c].Out2_Value=On; 
           break;
-         case 3:    
-           circuits[c].Out1_Value=On;circuits[c].Out2_Value=On; 
+          case 3:    
+             circuits[c].Out1_Value=On;
+             circuits[c].Out2_Value=On; 
           break;
-         default:    
-          circuits[c].Value=0;circuits[c].Out1_Value=Off;circuits[c].Out2_Value=Off;
+          default:    
+            circuits[c].Value=0;
+            circuits[c].Out1_Value=Off;
+            circuits[c].Out2_Value=Off;
           break;
-         } 
+        } 
         }
       }
       if ((circuits[c].Type==Persiana)||(circuits[c].Type==Toldo)){//PersianaS
-       circuits[c].Out1_Value=Off;circuits[c].Out2_Value=Off;
+       circuits[c].Out1_Value=Off;
+       circuits[c].Out2_Value=Off;
        if ((OutDowPersiana[circuits[c].Device_Number]==true)||(OutUpPersiana[circuits[c].Device_Number]==true))
        {
          if ((OutDowPersiana[circuits[c].Device_Number]==true)&&(OutUpPersiana[circuits[c].Device_Number]==false)){circuits[c].Out1_Value=On; circuits[c].Out2_Value=On;}
@@ -493,7 +526,7 @@ void GestionCircuitos(){
 }
 
 
-
+//
 void InputState(){  
   for (byte i=0; i<Number_Input;i++){
      unsigned long InputMillis = millis()-LastTimeInput[i];
@@ -568,13 +601,28 @@ void SubirPersiana(byte NPersiana)
    
 void BajarPersiana(byte NPersiana)
 {
-  if (OutUpPersiana[NPersiana]==true){SubirPersiana(NPersiana);OutUpPersiana[NPersiana]=false;OutControl();delay(200);}
+  if (OutUpPersiana[NPersiana]==true){
+	SubirPersiana(NPersiana);
+	OutUpPersiana[NPersiana]=false;
+	OutControl();
+	delay(200);
+	}
   unsigned long TiempoActual = micros();
-  if (OutDowPersiana[NPersiana]==false){OutDowPersiana[NPersiana]=true;}
+  if (OutDowPersiana[NPersiana]==false){
+	OutDowPersiana[NPersiana]=true;
+  }
   else{
-    long DiferenciaTiempo;
-    if (TiempoActual<TiempoMovPersiana[NPersiana]){DiferenciaTiempo=TiempoActual;}else{DiferenciaTiempo = TiempoActual-TiempoMovPersiana[NPersiana];}
-    if ((TiempoPosPersianaDown[NPersiana] + DiferenciaTiempo)<TimDowPersiana[NPersiana]){TiempoPosPersianaDown[NPersiana]=TiempoPosPersianaDown[NPersiana] + DiferenciaTiempo;}else{TiempoPosPersianaDown[NPersiana]=TimDowPersiana[NPersiana];}
+    unsigned long DiferenciaTiempo;
+    if (TiempoActual<TiempoMovPersiana[NPersiana]){
+		DiferenciaTiempo=TiempoActual;
+	}else{
+		DiferenciaTiempo = TiempoActual-TiempoMovPersiana[NPersiana];
+	}
+    if ((TiempoPosPersianaDown[NPersiana] + DiferenciaTiempo)<TimDowPersiana[NPersiana]){
+		TiempoPosPersianaDown[NPersiana]=TiempoPosPersianaDown[NPersiana] + DiferenciaTiempo;
+	}else{
+		TiempoPosPersianaDown[NPersiana]=TimDowPersiana[NPersiana];
+	}
    
     byte porcentajeBajada = TiempoPosPersianaDown[NPersiana] / (TimDowPersiana[NPersiana]/100);
     byte porcentajeSubida=100-porcentajeBajada;
@@ -583,11 +631,14 @@ void BajarPersiana(byte NPersiana)
   }  
   TiempoMovPersiana[NPersiana]=TiempoActual;
 }
+
 void GestionMovPersianas(byte NPersiana)
 {
   if (InUpPersiana[NPersiana] || InDowPersiana[NPersiana])
   {  //Funcionamiento Manual
-    if (InUpPersiana[NPersiana] && InDowPersiana[NPersiana]){OutDowPersiana[NPersiana]=false;OutUpPersiana[NPersiana]=false;}
+    if (InUpPersiana[NPersiana] && InDowPersiana[NPersiana]){
+		OutDowPersiana[NPersiana]=false;OutUpPersiana[NPersiana]=false;
+	}
     else{
       if (InUpPersiana[NPersiana]){SubirPersiana(NPersiana);} 
       if (InDowPersiana[NPersiana]){BajarPersiana(NPersiana);}
@@ -613,8 +664,23 @@ void GestionMovPersianas(byte NPersiana)
   }
 }
 
-void ReiniciarTiempoPersianas(){for ( byte c =0; c<NumeroPersianas; c++){TimUpPersiana[c]=(EepromRead(480 + c))* 1000000; TimDowPersiana[c]=(EepromRead(510 + c))* 1000000;}}
-void ReiniciarPosicionPersiana(byte NumPersiana){TiempoPosPersianaUp[NumPersiana]=0;TiempoPosPersianaDown[NumPersiana]=TimDowPersiana[NumPersiana];circuits[LocalizadorPersiana[NumPersiana]].Value=100;}
+//
+void ReiniciarTiempoPersianas()
+{
+  for ( byte c =0; c < NumeroPersianas; c++){
+    TimUpPersiana[c]=(EepromRead(EM_UP_TIM_SHUTTER_OFFSET + c))*  1000000; 
+    TimDowPersiana[c]=(EepromRead(EM_DO_TIM_SHUTTER_OFFSET + c))* 1000000;
+  }
+}
+
+//
+void ReiniciarPosicionPersiana(byte NumPersiana)
+{
+  TiempoPosPersianaUp[NumPersiana]=0;
+  TiempoPosPersianaDown[NumPersiana]=TimDowPersiana[NumPersiana];
+  circuits[LocalizadorPersiana[NumPersiana]].Value=100;
+}
+
 void CargaPosicionPersiana(byte NPersiana)
 {
   PosicionPersiana[NPersiana]=circuits[LocalizadorPersiana[NPersiana]].Value;
@@ -667,7 +733,7 @@ void RecepcionPaqueteUDP(){
   
   if(p>0){    
      #ifdef DEBUG_MODE        
-      Serial.println("UDP Packet recive");   
+      Serial.println(F("UDP Packet recive"));   
     #endif
     
     Udp.read(packetBuffer,UDP_TX_PACKET_MAX_SIZE);
@@ -692,8 +758,9 @@ void RecepcionPaqueteUDP(){
     }
     else if (strncmp(packetBuffer, "SETNOTI", 7)==0){
        byte pos=packetBuffer[7]-1;
-       Alarms[pos]=packetBuffer[8]-1;strcpy(packetBuffer, "WIALMO");  
-       EepromWrite(3880+pos,Alarms[pos]);
+       Alarms[pos]=packetBuffer[8]-1;
+       strcpy(packetBuffer, "WIALMO");  
+       EepromWrite(EM_ALARMS_OFSSET + pos,Alarms[pos]);
     }
        
     else if (strncmp(packetBuffer, "SVAL", 4)==0){
@@ -768,14 +835,14 @@ void RecepcionPaqueteUDP(){
     }
     	
     else if (strncmp(packetBuffer, "CLEARHORARIO", 11)==0){
-      //p=950;                                // Pointer, first address memory slot. Eeprom.
-      for (p = 950; p <= 3879; p++){          // Size slot 80 * 4bytes data *7 day of the week + 
+           
+      for (p = EM_TRIGGER_OFFSET; p <= EM_TIME_ESPECIAL2_END; p++){          // Size slot 80 * 4bytes data *7 day of the week + 
         EepromWrite(p, 66);
       }
       strcpy(packetBuffer, "HORARIOS BORRADOS");     
     }
     else if (strncmp(packetBuffer, "CLEARESPCDAY", 12)==0){
-      for (p = 3900; p <= 3999; p++){          // size slot (100)  50 * 4bytes data * 2 special days
+      for (p = EM_DATE_ESPECIAL1_OFSSET; p <= EM_DATE_ESPECIAL2_END; p++){          // size slot (100)  50 * 4bytes data * 2 special days
         EepromWrite(p, 0);
       }
       strcpy(packetBuffer, "DIAS ESPECIALES BORRADOS");     
@@ -791,17 +858,18 @@ void RecepcionPaqueteUDP(){
       strncat(packetBuffer, adata,1);     
       strcat(packetBuffer, ReadSensor(adata[0]));
     }  
-    else if (strncmp(packetBuffer, "READDAY", 7)==0){
+    else if (strncmp(packetBuffer, "READDAY", 7)==0)
+    {
       if (packetBuffer[7]=='2'){
-        p=3950;                                // Pointer, first address memory slot. Eeprom.
+        p=EM_DATE_ESPECIAL2_OFSSET;                                // Pointer, first address memory slot. Eeprom.
       }
       else{
-        p=3900;
+        p=EM_DATE_ESPECIAL1_OFSSET;
       }
       strcpy(packetBuffer,"CFDA");             
-      //indexstr=strlen(packetBuffer);         // ## It can be used, but increases the size of the sketch.         
+           
       indexstr=4;                              // Index to string constructor.
-      for (c = 0; c<50; c++){                  // Number of Iterations = slot size.
+      for (c = 0; c<EM_DATE_ESPECIAL_SIZE; c++){                  // Number of Iterations = slot size.
         packetBuffer[indexstr]=EepromRead(p);  // Read Eeprom, data stored in the same packetBuffer
         indexstr++;
         p++;
@@ -809,42 +877,42 @@ void RecepcionPaqueteUDP(){
       packetBuffer[indexstr]='\0';              // End of string. NULL termintation.        
               
     }    
-    else if (strncmp(packetBuffer, "WRIDAYE", 7)==0){
+    else if (strncmp(packetBuffer, "WRIDAYE", 7)==0)
+    {
        
        if (packetBuffer[7]==2){
-         p=3950;
+         p=EM_DATE_ESPECIAL2_OFSSET;
        }
        else{
-         p=3900;
+         p=EM_DATE_ESPECIAL1_OFSSET;
        }
          
        indexdata=8;                               //Index to first data in packetBuffer. 
        
-       for (c=0; c<50; c++){
+       for (c=0; c<EM_DATE_ESPECIAL_SIZE; c++){
            EepromWrite(p++, packetBuffer[indexdata++]);    //Write de data.        
        }
        packetBuffer[0]=COMPLETED;              
     }      
-    else if (strncmp(packetBuffer, "RETRIGGER", 9)==0){      
+    else if (strncmp(packetBuffer, "RETRIGGER", 9)==0)
+    {      
       strcpy(packetBuffer , "TIGR");
-      //indexstr=strlen(packetBuffer);
-      indexstr=4;
-      p=950;
-      for (; p<998; p++){
+      indexstr=4;    
+      for (p=EM_TRIGGER_OFFSET; p <= EM_TRIGGER_END; p++){
         packetBuffer[indexstr++] = EepromRead(p)+1;        
       }
       packetBuffer[indexstr]='\0';      
     }    
     else if (strncmp(packetBuffer, "WTGR", 4)==0){
-      indexdata=4;
-      p=950;
-      for (; p<998;p++){
+      indexdata=4;      
+      for (p=EM_TRIGGER_OFFSET; p <= EM_TRIGGER_END; p++){
         EepromWrite(p, packetBuffer[indexdata++]);
       }
       packetBuffer[0]=COMPLETED;         
     }   
-    else if (strncmp(packetBuffer, "READHOR", 7)==0){        
-       p=packetBuffer[7]*320+1000;
+    else if (strncmp(packetBuffer, "READHOR", 7)==0){ 
+		// p=packetBuffer[7]*320+1000;
+       p=(packetBuffer[7] * EM_TIME_DAY_SIZE) + EM_TIME_WEEKLY_OFFSET;
        strcpy(packetBuffer, "EHR");       
        packetBuffer[3]=1;  
        indexstr=4;  
@@ -854,8 +922,8 @@ void RecepcionPaqueteUDP(){
        packetBuffer[indexstr]='\0';   
     }
     else if (strncmp(packetBuffer, "HOREAD", 6)==0){
-      p=packetBuffer[7]*320+1000;
-      p+=(packetBuffer[6]-1)*80;
+      p=(packetBuffer[7] * EM_TIME_DAY_SIZE) + EM_TIME_WEEKLY_OFFSET;
+      p+=(packetBuffer[6]-1) * 80;
       strcpy(packetBuffer, "EHR");
       packetBuffer[3]=packetBuffer[6];
       indexstr=4;
@@ -866,7 +934,7 @@ void RecepcionPaqueteUDP(){
       packetBuffer[indexstr]='\0';	   
     }
     else if (strncmp(packetBuffer, "HORWRI", 6)==0){
-      p=(packetBuffer[7]*320)+1000;
+      p=(packetBuffer[7] * EM_TIME_DAY_SIZE) + EM_TIME_WEEKLY_OFFSET;
       data=packetBuffer[6];
       p+=(data-1)*80;
       indexdata=8;
@@ -882,14 +950,30 @@ void RecepcionPaqueteUDP(){
       EnvioEstadoActual();
       packetBuffer[0]=EXTERNAL_REPLY;
     }
-    else if (strncmp(packetBuffer, "WESC", 4)==0){    
-      p = (packetBuffer[4] -1) * 30;
+    //ESCENES
+    else if (strncmp(packetBuffer, "WESC", 4)==0){
+      p=(int) packetBuffer[4];          
+      p = EM_ESCENES_OFFSET + ( (p-1) * S_ESCENES ) ;
       indexdata=5;      
-      for (c = 0; c<30; c++){
+      for (c = 0; c < S_ESCENES; c++){
          EepromWrite(p++, packetBuffer[indexdata++]-1);
        }
        packetBuffer[0]=COMPLETED;       
-    }    
+    }
+    else if (strncmp(packetBuffer, "RESC", 4)==0){
+       indexdata=(int) packetBuffer[4];
+       p = ((indexdata -1) * S_ESCENES ) + EM_ESCENES_OFFSET;    
+       strcpy(packetBuffer,"VESC");     
+       indexstr=4;
+       packetBuffer[indexstr++]=indexdata;
+      
+       for (c = 0; c < S_ESCENES; c++){
+         data=EepromRead(p++);
+         if (data<=254){data++;}
+         packetBuffer[indexstr++]=data;
+       }
+       packetBuffer[indexstr]='\0';      
+    }        
     else if (strncmp(packetBuffer, "ESTADOINST",10)==0){      
       strcpy(packetBuffer, "ESTACT");     
       indexstr=6;
@@ -901,26 +985,13 @@ void RecepcionPaqueteUDP(){
       packetBuffer[indexstr++]=year + 1;       
       packetBuffer[indexstr]='\0';  
     }
-    else if (strncmp(packetBuffer, "RESC", 4)==0){
-       indexdata=(int) packetBuffer[4];
-       p = (indexdata -1) * 30;     
-       strcpy(packetBuffer,"VESC");     
-       indexstr=4;
-       packetBuffer[indexstr++]=indexdata;
-      
-       for (c = 0; c < 30; c++){
-         data=EepromRead(p++);
-         if (data<=254){data++;}
-         packetBuffer[indexstr++]=data;
-       }
-       packetBuffer[indexstr]='\0';      
-    }    
+
     else if (strncmp(packetBuffer, "ENABLEHOR", 9)==0 ){      
          
        strcpy(packetBuffer, "ENHOR");       
        indexstr=5;
-       p=400;
-       for (c=0; c<50; c++){
+       p=EM_EN_TIMETABLE_OFFSET;
+       for (c=0; c<N_EN_TIMETABLE; c++){
            packetBuffer[indexstr ++]=EepromRead(p++)+1;
        }
        packetBuffer[indexstr]='\0';
@@ -928,8 +999,8 @@ void RecepcionPaqueteUDP(){
     }
     else if (strncmp(packetBuffer, "WHOR", 4)==0){
        indexdata=4;
-       p=400;
-       for (c = 0; c<50; c++){
+       p=EM_EN_TIMETABLE_OFFSET;
+       for (c = 0; c<N_EN_TIMETABLE; c++){
          EepromWrite(p++, packetBuffer[indexdata++]-1);
        }
        packetBuffer[0]=COMPLETED;
@@ -967,16 +1038,16 @@ void RecepcionPaqueteUDP(){
     else if (strncmp(packetBuffer, "TIMPERSIANA", 11)==0){
       strcpy(packetBuffer, "LECPE");      
       indexstr=5;       
-      p=480;
-      for (c=0; c<60; c++){
-         packetBuffer[indexstr++]=EepromRead(p++)+1;
-       }
-       packetBuffer[indexstr]='\0';      
+      p=EM_UP_TIM_SHUTTER_OFFSET;  
+      for (c=0; c < (N_UP_TIM_SHUTTER *2) ; c++){
+        packetBuffer[indexstr++]=EepromRead(p++)+1;
+      }   
+      packetBuffer[indexstr]='\0';      
     }
     else if (strncmp(packetBuffer, "WCOW", 4)==0){
       data = packetBuffer[5]-1;
       indexdata=packetBuffer[4]-1;
-      p = indexdata + 940;      
+      p = indexdata + EM_SETPOINTS_OFSSET;      
       EepromWrite(p, data);
       Consignas[indexdata]=data;      
       goto requestSP;          // OJO salto con Goto no mover.
@@ -989,11 +1060,12 @@ void RecepcionPaqueteUDP(){
          packetBuffer[indexstr++]= Consignas[c]+1;
        }
        packetBuffer[indexstr]='\0';    
-    }     
+    } 
+    //Conrol persiana.    
     else if (strncmp(packetBuffer, "WPERS", 5)==0){
-      p=480;
+      p=EM_UP_TIM_SHUTTER_OFFSET;
       indexdata=5;
-      for (byte  i = 0; i<60;i++){
+      for (byte  i = 0; i< (N_UP_TIM_SHUTTER *2) ;i++){
         EepromWrite(p++, packetBuffer[indexdata++]-1);
       }
       ReiniciarTiempoPersianas();
@@ -1002,7 +1074,8 @@ void RecepcionPaqueteUDP(){
     else if (strncmp(packetBuffer, "RESTPER", 7)==0){
         ReiniciarPosicionPersiana(packetBuffer[7]-1);
         strcpy(packetBuffer,"RESETEANDO PERSIANA");        
-    }    
+    }
+        
     else if (strncmp(packetBuffer, "HIST", 4)==0){
       #ifdef HISTORICAL_SD
        byte b=packetBuffer[4];
@@ -1056,28 +1129,7 @@ void RecepcionPaqueteUDP(){
   }
 }
 
-/*void ReadDate()
-{
-  char Respuesta[26];
-  Respuesta[0]='E';
-  Respuesta[1]='S';
-  Respuesta[2]='T';
-  Respuesta[3]='A';
-  Respuesta[4]='C';
-  Respuesta[5]='T';
-       
-  Respuesta[6]=TipoDia + 1;
-  Respuesta[7]=hour + 1;
-  Respuesta[8]=minute + 1;
-  Respuesta[9]=dayOfMonth + 1;
-  Respuesta[10]=month + 1;
-  Respuesta[11]=year + 1;
-       
-  Respuesta[12]='\0';
-  
-  EnviarRespuesta(Respuesta); 
-}
-*/
+
 //MODIFICADO.
 void EnvioEstadoActual()
 {
@@ -1123,143 +1175,137 @@ void EnvioEstadoActual()
 }
 
 
-
+//Modificado 2.3
 void SelectScene(byte Dir)
 {
-	Dir = (Dir-1) * 30;for (byte i =0 ; i<Number_Circuit;i++){byte val =EepromRead(Dir+i); if (val<250){circuits[i].Value=val;}}}
+  int p;
+  byte c,v;
+  
+  p= (int) Dir;
+  p= EM_ESCENES_OFFSET + ((p-1) * S_ESCENES );
+  for (c =0 ; c<Number_Circuit; c++){
+    v =EepromRead(p + c); 
+    if (v < 250){
+      circuits[c].Value = v;
+    }
+  }
+}
+
+void timeChangeCircuit(int addressEE)
+{
+  byte ci=EepromRead(addressEE);
+  byte val=EepromRead(addressEE+1);
+  
+  if (ci < 30)
+  {
+    circuits[ci].Value=val;
+  }
+  else if(ci < 40)
+  {
+    SelectScene(ci-29);            
+  }  
+  else if (ci < 50)
+  {
+    if (val==1){
+      Condicionados[ci-40]=true;
+    }
+    else{
+      Condicionados[ci-40]=false;
+    }
+  }
+    
+}
+
+
+
 
 void CargaHora()
 {
   getDateDs1307(&second, &minute, &hour, &dayOfWeek, &dayOfMonth, &month, &year);
   Tim30Sg=millis();
-  if (minute != minutoMemory){ActualizaMinuto();NewMinute();  }
+  if (minute != minutoMemory)
+  {
+    ActualizaMinuto();
+    NewMinute();
+  }
 }
 
+
+//Envento cada minuto.
 void ActualizaMinuto()
 {  
-  //if ((hour==0)&&minute==0)){}//CalculaCrepusculo();}
-  #ifdef HISTORICAL_SD
-    if ((minute==0)||(minute==15)||(minute==30)||(minute==45)){GuardaHistorico();}
-  #endif
-  for (byte c=0;c<Number_Circuit;c++){if ((circuits[c].Type==Riego_Temporizado)&&(circuits[c].Value>=1)){circuits[c].Value--;}}//Riego Temporizado
-  
-  if(Enable_DaylightSavingTime==true && minute==0){
-    if(month==3 && dayOfMonth >= 26 && dayOfWeek == 7 && hour==2){
-      hour = 3;
-      setDateDs1307(second, minute, hour, dayOfWeek, dayOfMonth, month, year);
-    }
-    if(month==10 && dayOfMonth >= 26 && dayOfWeek == 7 && hour==2){
-      if (HoraRetrasa==false){
-        hour = 1;HoraRetrasa=true;
-        setDateDs1307(second, minute, hour, dayOfWeek, dayOfMonth, month, year);
+    //if ((hour==0)&&minute==0)){}//CalculaCrepusculo();}
+    #ifdef HISTORICAL_SD
+      if ((minute==0)||(minute==15)||(minute==30)||(minute==45)){GuardaHistorico();}
+    #endif
+    
+    //Riego Temporizado 
+    for (byte c=0;c<Number_Circuit;c++)
+    {
+      if ((circuits[c].Type==Riego_Temporizado)&&(circuits[c].Value>=1)){
+        circuits[c].Value--;
       }
     }
-    
-  }
-  if (hour==3){HoraRetrasa=false;}
-      //Adelanta la hora.Apartir del dia 25 de Marzo, busca el primer domingo
-      //y cuando se han las 2 de la noche adelanta el reloj una hora
-      //PENDIENTE ESTO ESTA MAL CAMBIARA LA HORA CADA MINUTO.
-//      if (month==3)
-//      {
-//         if (dayOfMonth >= 26)
-//         {
-//           if (dayOfWeek == 7)      
-//           {
-//             if (hour==2)
-//             {
-//                hour = 3;
-//                setDateDs1307(second, minute, hour, dayOfWeek, dayOfMonth, month, year);
-//             }
-//           }
-//           
-//         }
-//      }
-//      //Retrasa la hora.Apartir del dia 25 de Octubre, busca el primer domingo
-//      //y cuando se han las 2 de la noche retrasa el reloj una hora
-//      //PENDIENTE ESTO ESTA MAL CAMBIARA LA HORA CADA MINUTO.
-//      if (month==10)
-//      {
-//         if (dayOfMonth >= 26)
-//         {
-//           if (dayOfWeek == 7)      
-//           {
-//             if ((hour==2)&&(HoraRetrasa==false))
-//             {
-//                hour = 1;
-//                HoraRetrasa=true;
-//                setDateDs1307(second, minute, hour, dayOfWeek, dayOfMonth, month, year);
-//             }
-//           }
-//           
-//         }
-//      }
-//    }
-//    if (hour==3){HoraRetrasa=false;}
+  
+    //Adelanta la hora.Apartir del dia 25 de Marzo, busca el primer domingo
+    //y cuando se han las 2 de la noche adelanta el reloj una hora
+    if(Enable_DaylightSavingTime==true && minute==0){
+      if(month==3 && dayOfMonth >= 26 && dayOfWeek == 7 && hour==2){
+        hour = 3;
+        setDateDs1307(second, minute, hour, dayOfWeek, dayOfMonth, month, year);
+      }
+      if(month==10 && dayOfMonth >= 26 && dayOfWeek == 7 && hour==2){
+        if (HoraRetrasa==false){
+          HoraRetrasa=true;
+          hour = 1;          
+          setDateDs1307(second, minute, hour, dayOfWeek, dayOfMonth, month, year);
+        }
+      }
+      
+    }
+    if (hour==3){HoraRetrasa=false;}      
+
     
     minutoMemory=minute;
     
-
     TipoDia=dayOfWeek;
+    
     int Reg;
-  
-    for (Reg=3900; Reg<=3948;Reg=Reg+2){if (month == EepromRead(Reg)){if (dayOfMonth== EepromRead(Reg+1)){TipoDia=8;}}}//Verificacion Dia Especial 1
-    for (Reg=3950; Reg<=3998;Reg=Reg+2){if (month == EepromRead(Reg)){if (dayOfMonth== EepromRead(Reg+1)){TipoDia=9;}}}//Verificacion Dia Especial 2
-
-    int R= ((TipoDia-1)*320)+1000;
+    //Verificacion Dia Especial 1
+    for (Reg=EM_DATE_ESPECIAL1_OFSSET; Reg <= EM_DATE_ESPECIAL1_END; Reg=Reg +S_DATE_ESPECIAL){
+      if (month == EepromRead(Reg) && dayOfMonth== EepromRead(Reg+1)){      
+          TipoDia=8;
+      }
+    }
+    //Verificacion Dia Especial 2
+    for (Reg=EM_DATE_ESPECIAL2_OFSSET; Reg <= EM_DATE_ESPECIAL2_END; Reg=Reg +S_DATE_ESPECIAL){
+       if (month == EepromRead(Reg) && dayOfMonth== EepromRead(Reg+1)){      
+          TipoDia=9;
+      }
+    }
     
-  
     
-    for (Reg=R; Reg<=(R+316);Reg=Reg+4){
-      if ((hour==EepromRead(Reg))&&(minute==EepromRead(Reg+1))){
-        byte ci=EepromRead(Reg+2);
-        if ((ci>=0) &&(ci<50) && (EepromRead(ci+400)==1)){
-          if (ci<Number_Circuit){
-            circuits[ci].Value=EepromRead(Reg+3);
-        }
-        else if ((ci>29)&&(ci<40)){
-          SelectScene(ci-29);
-        }
-        else if (EepromRead(Reg+3)==1){
-          Condicionados[ci-40]=true;
-        }
-              else{
-                Condicionados[ci-40]=false;
-              }
-            }
-          }
-        }
-//    for (Reg=R; Reg<=(R+316); Reg=Reg+4){
-//      eHour = EepromRead(Reg);
-//      eMinute = EepromRead(Reg++);
-//      eData1 = EepromRead(Reg++);
-//      eData2 = EepromRead(Reg++);
-//      
-//      if ( hour==eHour && minute==eMinute){
-//        // Case circuit.     
-//        if (eData1<30){
-//          if (eData2==1 && eData1<Number_Circuit){
-//            circuits[eData1].Value=eData2;
-//          }
-//        }
-//        //Case Scene        
-//        else if (eData1 < 40){
-//          SelectScene(eData1 - 29);
-//        }
-//        //Another.
-//        else{ 
-//          if (eData2==1){
-//            Condicionados[eData1-40]=true;
-//          }
-//          else{
-//            Condicionados[eData1-40]=false;
-//          }
-//        }
-//      }
-//    } 
 
-    for (Reg=950; Reg<=994;Reg=Reg+4){if ((hour==EepromRead(Reg))&&(minute==EepromRead(Reg+1))){EepromWrite(Reg, 66); byte ci=EepromRead(Reg+2);if ((ci>=0) &&(ci<50) ){if (ci<Number_Circuit){circuits[ci].Value=EepromRead(Reg+3);}else{if ((ci>29)&&(ci<40)){SelectScene(ci-29);}else{if (EepromRead(Reg+3)==1){Condicionados[ci-40]=true;}else{Condicionados[ci-40]=false;}}}}}} 
+    int r= ((TipoDia-1)* EM_TIME_DAY_SIZE)+ EM_TIME_WEEKLY_OFFSET;
+    
+    //Read Timetable for days.
+    for (Reg=r; Reg <=(r+EM_TIME_DAY_SIZE);Reg=Reg + S_TIME_ESPECIAL)
+    {
+      if ( hour==EepromRead(Reg) && minute==EepromRead(Reg+1))
+      {
+        timeChangeCircuit(Reg+2);
+      }
+    }
 
+    //Read Triggers 
+    for (Reg=EM_TRIGGER_OFFSET; Reg <= EM_TRIGGER_END ; Reg=Reg + S_TRIGGER)
+    {
+      if ( hour==EepromRead(Reg) && minute==EepromRead(Reg+1))
+      {
+        EepromWrite(Reg, 66);   //Remove the trigger.
+        timeChangeCircuit(Reg+2);
+      }
+    }
 }
 
 
@@ -1374,14 +1420,14 @@ boolean ComproRespuestaHTTP(){
   }
 #endif 
 
-char* CharNull(char* Val){
-      int LongCad= strlen(Val); 
-      if (Val[LongCad-1]=='\0'){return Val;}
-      char Resultado[LongCad + 1];
-      Resultado[LongCad]='\0';
-      for (int c=0;c<LongCad;c++){Resultado[c]=Val[c];}
-      return Resultado;
-}
+//char* CharNull(char* Val){
+//      int LongCad= strlen(Val); 
+//      if (Val[LongCad-1]=='\0'){return Val;}
+//      char Resultado[LongCad + 1];
+//      Resultado[LongCad]='\0';
+//      for (int c=0;c<LongCad;c++){Resultado[c]=Val[c];}
+//      return Resultado;
+//}
 
 
 
@@ -1390,6 +1436,7 @@ void SetAlarm(int Number){if ((Number<=19)&&(Alarms[Number]==0)){Alarms[Number]=
 void ResetAlarm(int Number){if ((Number<=19)&&(Alarms[Number]==2)){Alarms[Number]=0;}}
 
 void loop(){
+  
   if((TimNow - TimSg) >= 1000) {
     LoopNewSecond();
     TimSg=TimNow;
@@ -1409,6 +1456,7 @@ void loop(){
 void SystemLoop()
 {
   // Actualiza valor retroavisos.
+  
   #ifdef RETROAVISOS 
     for (int c=0;c<Number_Circuit;c++){
       if (circuits[c].Type==Ado_Retroaviso){
