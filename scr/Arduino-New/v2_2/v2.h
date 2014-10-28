@@ -6,8 +6,8 @@
 
 //definir pines control SD
 #define SS_SD 4
-#define SS_ETHERNET 53 //53 for mega, for other set pin to 10
-
+#define SS_UNO 10
+#define SS_ETHERNET 53 //53 for mega, for other  pin  10
 //Aumentar tamaño buffer UDP
 #define UDP_TX_PACKET_MAX_SIZE 100 //increase UDP size
 
@@ -46,7 +46,7 @@ struct Circuit {
 
 //MEMORIA GLOBAL
 
-byte EspRfrIp = 0;
+byte EspRfrIp = 10;
 
 
 boolean Condicionados[10];              //Guarda el estado de los condicionados

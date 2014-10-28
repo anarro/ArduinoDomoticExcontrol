@@ -87,22 +87,14 @@
 /***********************************************************************************************************************/
 /***********************************************************************************************************************/
 
-//
-#ifdef RECEIVER_433
+
+
+#if defined (RECEIVER_433)  || defined (TRANSMITER_433) || defined ELECTRIC_OUTLET_433
   #include <RCSwitch.h>
-#endif
-
-#ifdef TRANSMITER_433 
- #ifndef RECEIVER_433
-    #include <RCSwitch.h>
-  #endif
+  RCSwitch mySwitch = RCSwitch();
+  #include "Mhz433.h"   
 #endif 
 
-#ifdef ELECTRIC_OUTLET_433 
-  #if !defined (RECEIVER_433)  || !defined (TRANSMITER_433)
-    #include <RCSwitch.h>
-  #endif 
-#endif 
 
 #ifdef LED_IR  
   #include <IRremote.h>
@@ -130,18 +122,7 @@
   float Temperature[]={20};
 #endif 
 
-#ifdef RECEIVER_433
-  RCSwitch mySwitch = RCSwitch();
-#endif
-#if defined (TRANSMITER_433)  && !defined (RECEIVER_433)
-  RCSwitch mySwitch = RCSwitch();  
-#endif 
 
-#ifdef ELECTRIC_OUTLET_433
-  #if !defined (TRANSMITER_433)  && !defined (RECEIVER_433)
-    RCSwitch mySwitch = RCSwitch();
-  #endif
-#endif 
 
 
 

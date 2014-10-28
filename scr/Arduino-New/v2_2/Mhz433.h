@@ -1,5 +1,8 @@
- #ifdef RECEIVER_433  
-  void Init433Mhz(){mySwitch.enableReceive(0);}// Receiver on inerrupt 0 => that is pin #2
+#ifdef RECEIVER_433
+  // Receiver on inerrupt 0 => that is pin #2
+  void Init433Mhz(){
+    mySwitch.enableReceive(0);
+  }
 
   void Recepcion433Mhz() {
     if (mySwitch.available()) {
@@ -24,6 +27,7 @@
 #endif
 
 #ifdef ELECTRIC_OUTLET_433
-  void Electric_Outlet_Control(int NumberSwicth,boolean  On){ 
+  void Electric_Outlet_Control(int NumberSwicth,boolean  On){
+      
   }
 #endif

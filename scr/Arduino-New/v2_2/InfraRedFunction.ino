@@ -86,8 +86,8 @@ void ComprobarInfrarro() {
         
         case  0xC03F00FF://cambia el codigo por el que envio tu mando a distancia
           if (Value[24]>=20){Value[24]-=20;}else{Value[24]=0;}
-          break; */
-         
+          break; 
+         */
        }  
       }  
      
