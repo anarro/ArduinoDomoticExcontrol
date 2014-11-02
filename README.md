@@ -13,6 +13,8 @@ Puedes controlar tu sistema mediante una aplicación Android o una aplicación e
 
 Estamos trabajando en mejoras incoroporando mas funcionalidades, y soporte para Arduinos con Atmega328.
 
+![](http://domotica-arduino.es/wp-content/uploads/2014/09/V2-300x215.png)
+
 
 
 
