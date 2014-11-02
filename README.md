@@ -26,16 +26,11 @@ Puedes controlar tu sistema mediante una aplicación Android o una aplicación e
 
 ![](http://domotica-arduino.es/wp-content/uploads/2014/09/V2-300x215.png)
 
-  * Control por voz.
+ *  Control por voz.
  *  Control con conexión 3g.
  *  Posibilidad de control desde fuera de la red local sin ip fija.
 
-<a href="http://www.youtube.com/watch?feature=player_embedded&v=DqTage2lQMc
-" target="_blank"><img src="https://www.youtube.com/watch?v=DqTage2lQMc/0.jpg" 
-alt="https://www.youtube.com/watch?v=DqTage2lQMc" width="240" height="180" border="10" /></a>
 
-<iframe width="560" height="315" src="http:///www.youtube.com/embed/DqTage2lQMc" frameborder="0" allowfullscreen></iframe>
-[! [TEXTO ALT IMAGEN HERE](https://www.youtube.com/watch?v=DqTage2lQMc/0.jpg)](http://https://www.youtube.com/watch?v=DqTage2lQMc)
 
 <a href="http://www.youtube.com/watch?feature=player_embedded&v=DqTage2lQMc
 " target="_blank"><img src="http://img.youtube.com/vi/DqTage2lQMc/0.jpg" 
