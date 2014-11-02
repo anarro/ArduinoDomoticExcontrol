@@ -7,6 +7,7 @@ Home automation system with Arduino and Android (Arduino Domotics Home Excontrol
 http://excontrol.es/Domotica-Arduino/
 
 Control domotico con arduino.
+
 Si estas pensando en incluir domotica en tu casa con Arduino, estas en el sitio correcto. Este es un proyecto domotico totalmente funcional.
 
 Estamos trabajando en mejoras incorporando mas funcionalidades, y soporte para Arduinos con Atmega328.
