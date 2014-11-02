@@ -37,3 +37,6 @@ alt="https://www.youtube.com/watch?v=DqTage2lQMc" width="240" height="180" borde
 <iframe width="560" height="315" src="http:///www.youtube.com/embed/DqTage2lQMc" frameborder="0" allowfullscreen></iframe>
 [! [TEXTO ALT IMAGEN HERE](https://www.youtube.com/watch?v=DqTage2lQMc/0.jpg)](http://https://www.youtube.com/watch?v=DqTage2lQMc)
 
+<a href="http://www.youtube.com/watch?feature=player_embedded&v=DqTage2lQMc
+" target="_blank"><img src="http://img.youtube.com/vi/DqTage2lQMc/0.jpg" 
+alt="IMAGE ALT TEXT HERE" width="240" height="180" border="10" /></a>
