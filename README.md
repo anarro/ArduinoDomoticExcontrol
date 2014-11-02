@@ -12,7 +12,7 @@ Si estas pensando en incluir domotica en tu casa con Arduino, estas en el sitio 
 
 Estamos trabajando en mejoras incorporando mas funcionalidades, y soporte para Arduinos con Atmega328.
 *  Iuminación con control de potencia.
-*  Control on off, para enchufes ventiladore etc.
+*  Control on off, para enchufes ventiladores etc.
 *  Persianas o toldos con posicionado porcentual.
 *  Control de climatización ajuste de temperatura de consigna programación horaria.
 *  Riego con temporización.
