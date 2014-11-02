@@ -29,7 +29,11 @@ Puedes controlar tu sistema mediante una aplicación Android o una aplicación e
   * Control por voz.
  *  Control con conexión 3g.
  *  Posibilidad de control desde fuera de la red local sin ip fija.
-https://www.youtube.com/watch?v=DqTage2lQMc
-<iframe width="560" height="315" src="//www.youtube.com/embed/DqTage2lQMc" frameborder="0" allowfullscreen></iframe>
+
+<a href="http://www.youtube.com/watch?feature=player_embedded&v=https://www.youtube.com/watch?v=DqTage2lQMc
+" target="_blank"><img src="https://www.youtube.com/watch?v=DqTage2lQMc/0.jpg" 
+alt="https://www.youtube.com/watch?v=DqTage2lQMc" width="240" height="180" border="10" /></a>
+
+<iframe width="560" height="315" src="http:///www.youtube.com/embed/DqTage2lQMc" frameborder="0" allowfullscreen></iframe>
 [! [TEXTO ALT IMAGEN HERE](https://www.youtube.com/watch?v=DqTage2lQMc/0.jpg)](http://https://www.youtube.com/watch?v=DqTage2lQMc)
 
