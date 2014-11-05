@@ -93,3 +93,8 @@ boolean InDowPersiana[NumeroPersianas];  //Boleana pulsador bajada Persiana
   #include "historical_SD.h"
 #endif
 
+#ifdef ETHERNET_SHIELD 
+  #include "EXC_udp.h"
+   #include "EXC_http.h"
+#endif
+

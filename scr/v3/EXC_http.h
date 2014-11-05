@@ -1,6 +1,8 @@
 
 #define HTTP_CONNET 
 
+// Refresco Ip con el servidor, 
+#define TIME_REFRESH_IP 50
 
 boolean ComproRespuestaHTTP(){
   int Reintento=0;
@@ -18,7 +20,7 @@ boolean ComproRespuestaHTTP(){
       return true;
     }
     else{
-      SystemLoop();
+ //     SystemLoop();
       delay(10);
       if (Reintento >= 700 ){
         #ifdef DEBUG_MODE   
@@ -32,19 +34,6 @@ boolean ComproRespuestaHTTP(){
     }
     Reintento++;
   }
-}
-
-
-boolean Notification(String Text){
-  if (Mail==""){return true;}
-  if (Connecting){return false;}
-  #ifdef DEBUG_MODE   
-    Serial.println("Notification = "+ Text);               
-  #endif
-  Text.replace(" ", "%20%20");
-  boolean result =CreateCabHTTP("GET http://excontrol.es/Users/Noti.aspx?Mail=",Text);
-  if (result){result=ComproRespuestaHTTP();}
-  return result;
 }
 
 boolean CreateCabHTTP(String URL, String Key2){
@@ -70,8 +59,22 @@ boolean CreateCabHTTP(String URL, String Key2){
   Connecting=false;
   return false;
 }
-// Refresco Ip con el servidor, 
-#define TIME_REFRESH_IP 50
+
+
+boolean Notification(String Text){
+  if (Mail==""){return true;}
+  if (Connecting){return false;}
+  #ifdef DEBUG_MODE   
+    Serial.println("Notification = "+ Text);               
+  #endif
+  Text.replace(" ", "%20%20");
+  boolean result =CreateCabHTTP("GET http://excontrol.es/Users/Noti.aspx?Mail=",Text);
+  if (result){result=ComproRespuestaHTTP();}
+  return result;
+}
+
+
+
 
 void connectAndRfr(){
   static byte EspRfrIp=TIME_REFRESH_IP;
@@ -80,7 +83,7 @@ void connectAndRfr(){
     return;
   }   
  
-  if (EspRfrIp--  0){
+  if (EspRfrIp-- ==  0){
  
  
   

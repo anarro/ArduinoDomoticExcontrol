@@ -18,47 +18,52 @@
  * 
  *  No esta probada en Arduino Leonardo.
  ****************************************************************************/
+ 
+ /*
+   Carga definiciones del proyecto por defecto, no borrar.
+ */
+ 
+ #include   "EXC_def.h"
+ #include <SPI.h>
+ 
+ 
 /**************************************************************************
   #Herramientas de depuracion.
 ***************************************************************************/
-//Enable watch dog
-//habilita perro guardian
+
 //#define ENABLE_WATCH_DOG;
 //#define DEBUG_MODE
-//#define ARDUINO_MEGA
-#ifdef ENABLE_WATCH_DOG
-  #include <avr/wdt.h>
-#endif 
 
 
 
-#include   "EXC_def.h"
+
+
+
+
 
 /**************************************************************************
   #Librerias estandar shield ETHERNET. UNO Y MEGA.
 ***************************************************************************/
 
-#include <SPI.h>
-//#define ETHERNET_SHIELD
-//#include <Ethernet.h>
-//#include <EthernetUdp.h>  
+
+#define ETHERNET_SHIELD
+#include <Ethernet.h>
+#include <EthernetUdp.h>  
+
+
 
 //#define WIFI_SHIELD;
+//#include <WiFi.h>
+//#include <WiFiUdp.h>
 
-//#ifdef WIFI_SHIELD
-//  #include <WiFi.h>
-//  #include <WiFiUdp.h>
-//#else
-//  #include <Ethernet.h>
-//  #include <EthernetUdp.h>  
-// // #include <utility/w5100.h>     // Advance Ethernet functions
-//#endif
 
-//#ifdef ARDUINO_MEGA
+
 //  #include <EEPROM.h>
-//  #include <SD.h>
+
+//  Descomentar para incluir uso de SD, con historicos.
 //  #define Historical_SD 
-//#else
+//  #include <SD.h>
+
 /**************************************************************************
   #     OBLIGATORIO UNO, NANO ATMEGA 328 
   #     EN CASO MEGA USA MEMORIA EXTERNA.  
@@ -80,7 +85,7 @@
 //#define RECEIVER_433
 //#define TRANSMITER_433
 //#define ELECTRIC_OUTLET_433
-//#define RETROAVISOS //Habilita funcionamiento por retroavisos
+//#define RETROAVISOS             //Habilita funcionamiento por retroavisos
 
 
 /***********************************************************************************************************************/
@@ -88,7 +93,9 @@
 /***********************************************************************************************************************/
 /***********************************************************************************************************************/
 
-
+#ifdef ENABLE_WATCH_DOG
+  #include <avr/wdt.h>
+#endif 
 
 #if defined (RECEIVER_433)  || defined (TRANSMITER_433) || defined ELECTRIC_OUTLET_433
   #include <RCSwitch.h>
@@ -193,7 +200,7 @@ const byte Circuit_Type[] ={Ado_3Etapas, Ado_Digital ,Persiana };
 #endif
 
 
-#include "EXC_ram.h"
+
 
 
 //CONFIGURACION DE RED
@@ -236,7 +243,7 @@ const byte Circuit_Type[] ={Ado_3Etapas, Ado_Digital ,Persiana };
 
 
 
-
+#include "EXC_ram.h"
 //#include "root/Common_functions.h"
 
 #include "Common_functions.h"
@@ -480,7 +487,9 @@ char* ReadSensor(byte NumeroSensor)
 
   return "RESERVA"; //No borrar, dont delete this line
 }
-String GetAlarmsName(byte Number){
+
+String GetAlarmsName(byte Number)
+{
 /*************************************************************/
 //AUTO GENERATED CODE
 /*************************************************************/

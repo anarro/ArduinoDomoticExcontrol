@@ -44,7 +44,7 @@ void InitDS18B20();
 void RefreshTemperature();
 /*************************************************************************** 
   SUBRUTINAS TRATAMIENTO EEPROM
-  DETECTA EL MICROCONTOLADOR DE LA TARJETA CONFIGURADA EN EL IDE ARDUINO 
+  DETECTA EL fMICROCONTOLADOR DE LA TARJETA CONFIGURADA EN EL IDE ARDUINO 
   CAMBIAMOS EL USO DE EEPROM INTERNO O EXTERNO 
   ACTIVADO MODO USO EEPROM EXTERNA !!!! 
 ****************************************************************************/
@@ -187,6 +187,7 @@ void getDateDs1307(byte *second,
 
 void setup()
 {  
+ 
 
   #ifdef HISTORICAL_SD 
     initPinSD();
@@ -228,8 +229,8 @@ void setup()
   for (c=0;c<Number_Circuit;c++){
     circuits[c].Type=Circuit_Type[c];        
     circuits[c].Device_Number=0;
-    circuits[c].Out1_Value=LOW;
-    circuits[c].Out2_Value=LOW;
+    circuits[c].Out1_Value=Off;
+    circuits[c].Out2_Value=Off;
     circuits[c].Value=0;
     circuits[c].CopyRef=0;
  //   circuits[c].Type=TipeCir[c];
@@ -269,7 +270,33 @@ void setup()
   #ifdef DEBUG_MODE
     Serial.println();
   #endif
-
+  
+  #ifdef WIFI_SHIELD
+     if (WiFi.status() == WL_NO_SHIELD) {
+       #ifdef DEBUG_MODE   
+          Serial.println("WiFi shield not present"); 
+        #endif
+      while(true);// don't continue:
+    } 
+    WiFi.config(ip);
+    ConexionWifi();
+     
+  #else
+    
+//     W5100.setRetransmissionTime(0x07D0);  //setRetransmissionTime sets the Wiznet's timeout period, where each unit is 100us, so 0x07D0 (decimal 2000) means 200ms.
+//     W5100.setRetransmissionCount(3);      //setRetransmissionCount sets the Wiznet's retry count.
+     //Ethernet.begin(mac);//DHCP MODE  
+     Ethernet.begin(mac,ip);
+     Udp.begin(localPort);
+    /* #ifdef DEBUG_MODE   
+         Serial.println("give the Ethernet shield a second to initialize:");               
+      #endif
+      delay(3000);
+      #ifdef DEBUG_MODE   
+         Serial.println("time completed");               
+      #endif*/
+  #endif
+  
   for (int per=0; per<NumeroPersianas; per++){
     InDowPersiana[per]=false;
     InUpPersiana[per]=false;
@@ -277,6 +304,7 @@ void setup()
   
   //Fijamos pines entrada salida
   unsigned long currenMillis = millis();
+  
   #ifdef RETROAVISOS     
     for (int c=0;c<Retroavisos_Number;c++){
       pinMode(PinEstadoCircuito[c], INPUT);
@@ -329,23 +357,7 @@ void setup()
   
 
   
-  #ifdef WIFI_SHIELD
-     if (WiFi.status() == WL_NO_SHIELD) {
-       #ifdef DEBUG_MODE   
-          Serial.println("WiFi shield not present"); 
-        #endif
-      while(true);// don't continue:
-    } 
-    WiFi.config(ip);
-    ConexionWifi();
-  #else
-    
-//     W5100.setRetransmissionTime(0x07D0);  //setRetransmissionTime sets the Wiznet's timeout period, where each unit is 100us, so 0x07D0 (decimal 2000) means 200ms.
-//     W5100.setRetransmissionCount(3);      //setRetransmissionCount sets the Wiznet's retry count.
-     //Ethernet.begin(mac);//DHCP MODE  
-     Ethernet.begin(mac,ip);
-     Udp.begin(localPort);
-  #endif
+
    
   #ifdef HISTORICAL_SD
     if(CargaSdOk){
@@ -506,20 +518,30 @@ void GestionCircuitos(){
       }
       //Gestion Enchufes Radio Frecuencia
      #ifdef ELECTRIC_OUTLET_433
-         if (circuits[c].Type==EnchufeRF){
+       if (circuits[c].Type==EnchufeRF){
            if (circuits[c].Value!=circuits[c].OldValue){
-             
-             if (circuits[c].Value==1){Electric_Outlet_Control(circuits[c].Device_Number+1,true);}else{Electric_Outlet_Control(circuits[c].Device_Number+1,false);}
              circuits[c].OldValue=circuits[c].Value;
+             
+             if (circuits[c].Value==1)
+               Electric_Outlet_Control(circuits[c].Device_Number+1,true);
+             else
+               Electric_Outlet_Control(circuits[c].Device_Number+1,false);
            }
-         }
+       }
      #endif 
   
   
      //Gestion retroaviso
      #ifdef RETROAVISOS   
         if (circuits[c].Type==Ado_Retroaviso){
-          if (circuits[c].OldValue!=circuits[c].Value){if(circuits[c].Out1_Value==Off){circuits[c].Out1_Value=On;}else{circuits[c].Out1_Value=Off;}}       
+          if (circuits[c].OldValue!=circuits[c].Value){
+            if(circuits[c].Out1_Value==Off){
+              circuits[c].Out1_Value=On;
+            }
+            else{
+              circuits[c].Out1_Value=Off;
+            }
+          }       
         }
       #endif    
    }
@@ -1312,9 +1334,7 @@ void ActualizaMinuto()
 /******************************************************************/
 // REFRESCAR
 /*****************************************************************/
-/******************************************************************/
-// REFRESCAR
-/*****************************************************************/
+
 boolean Notification(String Text){
   if (Mail==""){return true;}
   if (Connecting){return false;}
@@ -1324,14 +1344,6 @@ boolean Notification(String Text){
   Text.replace(" ", "%20%20");
   boolean result =CreateCabHTTP("GET http://excontrol.es/Users/Noti.aspx?Mail=",Text);
   if (result){result=ComproRespuestaHTTP();}
-  else{
-    client.stop();
-    client.flush();
-    Connecting=false;
-    #ifdef DEBUG_MODE   
-      Serial.println("Server no aviable");               
-    #endif
-  }
   return result;
 }
 void connectAndRfr(){
@@ -1353,11 +1365,15 @@ boolean CreateCabHTTP(String URL, String Key2){
     client.println(" HTTP/1.0");
     client.println();
     Connecting=true;
+    
     #ifdef DEBUG_MODE   
-      Serial.println("Coneccting completed");               
+    Serial.println("Conected");               
     #endif
     return true;
   }
+   #ifdef DEBUG_MODE   
+    Serial.println("Coneccting error");               
+    #endif
   Connecting=false;
   return false;
 }
@@ -1367,13 +1383,13 @@ boolean ComproRespuestaHTTP(){
     if (client.available()) {
       int c;
       for (c=0;c<5;c++){char c = client.read();}
+      #ifdef DEBUG_MODE   
+        Serial.println("Coneccting completed");               
+      #endif
       client.stop();
       client.flush();
       EspRfrIp=50;
       Connecting=false;
-      #ifdef DEBUG_MODE   
-          Serial.println("TCP Connection Complete");               
-       #endif
       return true;
     }
     else{
@@ -1381,7 +1397,7 @@ boolean ComproRespuestaHTTP(){
       delay(10);
       if (Reintento >= 700 ){
         #ifdef DEBUG_MODE   
-          Serial.println("Time Out TCP");               
+          Serial.println("Coneccting HTTP ERROR");               
         #endif
         client.stop();
         client.flush();
@@ -1392,7 +1408,6 @@ boolean ComproRespuestaHTTP(){
     Reintento++;
   }
 }
-
 
 #ifdef THERMOSTAT_DS18B20_NUMBER
   void InitDS18B20(){
@@ -1428,6 +1443,7 @@ boolean ComproRespuestaHTTP(){
 //      for (int c=0;c<LongCad;c++){Resultado[c]=Val[c];}
 //      return Resultado;
 //}
+
 
 
 

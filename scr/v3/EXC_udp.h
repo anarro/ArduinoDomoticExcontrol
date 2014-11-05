@@ -2,10 +2,10 @@
 #define UDP_CONNET
 
 
-void initUDP(
+void initUDP{
     Ethernet.begin(mac,ip);
     Udp.begin(localPort);
-)
+}
 
 //Modificado 2.3
 void SelectScene(byte Dir)
@@ -15,9 +15,11 @@ void SelectScene(byte Dir)
   
   p= (int) Dir;
   p= EM_ESCENES_OFFSET + ((p-1) * S_ESCENES );
-  for (c =0 ; c<Number_Circuit; c++){
+  for (c =0 ; c<Number_Circuit; c++)
+  {
     v =EepromRead(p + c); 
-    if (v < 250){
+    if (v < 250)
+    {
       circuits[c].Value = v;
     }
   }
