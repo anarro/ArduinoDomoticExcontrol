@@ -26,7 +26,7 @@ And much more !!!
 
 http://excontrol.es/Domotica-Arduino/
 
-[VISI THE FORUM]((http://domotica-arduino.es/foro/Forum-English))
+[VISIT THE FORUM](http://domotica-arduino.es/foro/Forum-English)
 
 SPANISH
 ========================
