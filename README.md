@@ -4,11 +4,33 @@ ACTUALIZACION VERSION 2.0.2
 
 Home automation system with Arduino and Android (Arduino Domotics Home Excontrol) 
 
-http://excontrol.es/Domotica-Arduino/
+This is a fully functional home automation project.
 
+We are working on adding more functionality enhancements, and support for Arduino with Atmega328.
+
+Windows Configurator simple.
+*lights with power control.
+*on off control of all types of circuits.
+*Blinds or awnings positioned percentage.
+*Climate control setpoint adjustment scheduling.
+*Irrigation timing.
+*Scheduling, running on Arduino. (RTC module is required)
+*Scenes.
+*RF Plugs.
+*Infrared to control equipment. TV, DVD, radio ...
+*Android applications, linux, mac and ios soon.
+*Voice control.
+*Ability to control from outside your local network without fixed ip.
+
+And much more !!!
+
+http://excontrol.es/Domotica-Arduino/
+SPANISH
+========================
 Control domotico con arduino.
 
 Si estas pensando en incluir domotica en tu casa con Arduino, estas en el sitio correcto. Este es un proyecto domotico totalmente funcional.
+Facilmente configurable gracias al configurador windows.
 
 Estamos trabajando en mejoras incorporando mas funcionalidades, y soporte para Arduinos con Atmega328.
 *  Iuminación con control de potencia.
