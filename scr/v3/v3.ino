@@ -46,7 +46,7 @@
 ***************************************************************************/
 
 
-#define ETHERNET_SHIELD
+//#define ETHERNET_SHIELD
 #include <Ethernet.h>
 #include <EthernetUdp.h>  
 
@@ -242,10 +242,6 @@ const byte Circuit_Type[] ={Ado_3Etapas, Ado_Digital ,Persiana };
 #endif
 
 
-
-#include "EXC_ram.h"
-//#include "root/Common_functions.h"
-
 #include "Common_functions.h"
 
 /******************************************************************************************************************************/
@@ -257,6 +253,7 @@ void UserLoop(){
 
 
 }
+
 void LoopNewSecond(){
   //Este evento se produce cada segundo.
   //This event occurs every second.
@@ -443,7 +440,7 @@ void OutControl(){
 	//Out 1
 	digitalWrite(PinOutput[0],circuits[2].Out1_Value);
         digitalWrite(PinOutput[1],circuits[2].Out2_Value);
-
+      
      
 /*************************************************************/
 //END GENERATED CODE

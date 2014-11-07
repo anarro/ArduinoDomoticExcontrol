@@ -1,32 +1,77 @@
 
-#define UDP_CONNET
+#if defined (ETHERNET_SHIELD) || (WIFI_SHIELD)
+  #define UDP
+#endif
 
-
-void initUDP{
-    Ethernet.begin(mac,ip);
-    Udp.begin(localPort);
-}
-
-//Modificado 2.3
-void SelectScene(byte Dir)
-{
-  int p;
-  byte c,v;
+#ifndef UDP
+  void RecepcionPaqueteUDP(){
+    
+  } 
   
-  p= (int) Dir;
-  p= EM_ESCENES_OFFSET + ((p-1) * S_ESCENES );
-  for (c =0 ; c<Number_Circuit; c++)
-  {
-    v =EepromRead(p + c); 
-    if (v < 250)
-    {
-      circuits[c].Value = v;
-    }
-  }
+#else
+//Funciones generales comunes.
+extern void CargaHora();
+extern void ReiniciarTiempoPersianas();
+extern void ReiniciarPosicionPersiana(byte);
+
+//Funciones externas que son configurables por el usuario.
+extern char* ReadSensor(byte);
+extern void CommonOrders(byte);
+extern char* RunCommand(byte);
+
+
+
+#ifdef WIFI_SHIELD
+void ConexionWifi() {
+    #ifdef DEBUG_MODE   
+        Serial.println("Iniciando Conexon Wifi");  
+    #endif
+    
+    if (Net_Type == OPEN){WiFi.begin(ssid);  }//Open Network
+    if (Net_Type == WEP){WiFi.begin(ssid, pass); }//WPA NETWORK
+    if (Net_Type == WPA){WiFi.begin(ssid, keyIndex, pass); }//WEP 
+    
+    #ifdef ENABLE_WATCH_DOG
+      wdt_disable();
+    #endif 
+    
+    delay(10000);  //Esperamos 10 segundos para conexion
+    #ifdef ENABLE_WATCH_DOG
+      wdt_enable(WDTO_8S); 
+    #endif 
+    
+    TimConexion=millis();
 }
+#endif
 
 
+#ifdef ETHERNET_SHIELD
+  void initUDP(){
+      Ethernet.begin(mac,ip);
+      Udp.begin(localPort);
+      delay(3000);
+  }
+  #else
+  void initUDP(){
+   if (WiFi.status() == WL_NO_SHIELD) {
+       #ifdef DEBUG_MODE   
+          Serial.println("WiFi shield not present"); 
+        #endif
+      while(true);// don't continue:
+    } 
+    WiFi.config(ip);
+    ConexionWifi();
+  }  
+#endif
 
+//MODIFICADO USO PUNTERO.
+void EnviarRespuesta(char  *ReplyBuffer)
+{
+    // send a reply, to the IP address and port that sent us the packet we received
+    Udp.beginPacket(Udp.remoteIP(), Udp.remotePort());
+    Udp.write(ReplyBuffer);
+    Udp.endPacket();
+}
 
 
 //MODIFICADO.
@@ -74,21 +119,7 @@ void EnvioEstadoActual()
 }
 
 
-
-
-
-//MODIFICADO USO PUNTERO.
-void EnviarRespuesta(char  *ReplyBuffer)
-{
-    // send a reply, to the IP address and port that sent us the packet we received
-    Udp.beginPacket(Udp.remoteIP(), Udp.remotePort());
-    Udp.write(ReplyBuffer);
-    Udp.endPacket();
-}
-
-
-
-*Modificacion principal.....
+/*Modificacion principal.....
 	Modificados:
 		ESTADOINST
 		READHOR  Antes (envio 320) Ahora (envio 80) + 3  x HOREAD 		
@@ -237,8 +268,8 @@ void RecepcionPaqueteUDP(){
       strcpy(packetBuffer, "DIAS ESPECIALES BORRADOS");     
     }
     else if (strncmp(packetBuffer, "SETFH", 5)==0){
-      setDateDs1307(packetBuffer[5] ,packetBuffer[6], packetBuffer[7], packetBuffer[8], packetBuffer[9], packetBuffer[10], packetBuffer[11]);
-      CargaHora();
+       setDateDs1307(packetBuffer[5] ,packetBuffer[6], packetBuffer[7], packetBuffer[8], packetBuffer[9], packetBuffer[10], packetBuffer[11]);
+       CargaHora();
       strcpy(packetBuffer, "SETFHOK");
     }
     else if (strncmp(packetBuffer, "GETSENSOR", 9)==0){          
@@ -517,3 +548,7 @@ void RecepcionPaqueteUDP(){
     }  
   }
 }
+#endif
+
+
+

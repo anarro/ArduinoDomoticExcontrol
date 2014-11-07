@@ -1,31 +1,6 @@
 
 
 
-
-
-
-//definir pines control SD
-#define SS_SD 4
-#define SS_UNO 10
-#define SS_ETHERNET 53 //53 for mega, for other  pin  10
-//Aumentar tamaño buffer UDP
-#define UDP_TX_PACKET_MAX_SIZE 100 //increase UDP size
-
-//Direccion de trabajo para modulos RTC.
-#define DS_RTC 0x68  //Direccion Reloj
-
-#ifdef moduleDS1307
-  #define IC24C32_I2C_ADDRESS 0x50
-#endif
-
-#ifdef moduleDS3231
-  #define IC24C32_I2C_ADDRESS 0x57
-#endif
-
-
-
-
-
 //Arrays constructor
 
 const byte Number_Circuit = ( sizeof(Circuit_Type) ); 
@@ -45,10 +20,6 @@ struct Circuit {
 }circuits[Number_Circuit];
 
 //MEMORIA GLOBAL
-
-byte EspRfrIp = 10;
-
-
 boolean Condicionados[10];              //Guarda el estado de los condicionados
 byte Consignas[10];                     //Guarda el valor de las consignas
 boolean Connecting=false;
@@ -89,12 +60,7 @@ boolean OutDowPersiana[NumeroPersianas];  //Boleana para activar salida persiana
 boolean InUpPersiana[NumeroPersianas];  //Boleana pulsador subida Persiana
 boolean InDowPersiana[NumeroPersianas];  //Boleana pulsador bajada Persiana
 
-#ifdef Historical_SD
-  #include "historical_SD.h"
-#endif
 
-#ifdef ETHERNET_SHIELD 
-  #include "EXC_udp.h"
-   #include "EXC_http.h"
-#endif
+
+
 

@@ -1,26 +1,35 @@
 
-//
+#include "EXC_ram.h"
+#include "EXC_eeprom.h"
+#include "EXC_time.h"
+#include "EXC_udp.h"
+#include "EXC_http.h"
+
+
+
+#ifdef Historical_SD
+  #include "historical_SD.h"
+#endif
+
+//Aumentar tamaño buffer UDP
+#define UDP_TX_PACKET_MAX_SIZE 100 //increase UDP size
+
+//Funciones externas que son configurables por el usuario.
 extern void UserSetup();
-extern void UserLoop();          /// En ciclo loop se tendria que cambiar a principal.
-
+extern void UserLoop();
 extern void OutControl();
-extern void InControl();
-extern void NewMinute();
+extern void LoopNewSecond();
 extern void Loop30Sg();
-
-// Transformar a constructor dentro root.
-extern void CommonOrders(byte CommandNumber);
-extern char* ReadSensor(byte NumeroSensor);
-extern char* RunCommand(byte CommandNumber);
-extern String GetAlarmsName(byte Number);
-
-
-// Esto tiene que ser una llamada del principal.
+extern void NewMinute();
+extern void SwicthStateChange(byte NumberInput);
 extern void LongInputEnd(byte NumberInput);
 extern void LongInput(byte NumberInput);
 extern void ShortInput(byte NumberInput);
-extern void SwicthStateChange(byte NumberInput);
-extern void LoopNewSecond();
+extern String GetAlarmsName(byte Number);
+extern void CommonOrders(byte CommandNumber);
+extern char* ReadSensor(byte NumeroSensor);
+extern char* RunCommand(byte CommandNumber);
+
 
 // PROTOTIPOS
 void CargaHora();
@@ -30,7 +39,6 @@ void EnvioEstadoActual();
 void SelectScene(byte);
 void ActualizaMinuto();
 void SubirPersiana(byte NPersiana);
-//void CargarTiempoPersianas();
 void ReiniciarTiempoPersianas();
 void connectAndRfr();
 void RecepcionPaqueteUDP();
@@ -38,182 +46,10 @@ void BajarPersiana(byte);
 void CargaPosicionPersiana(byte NPersiana);
 boolean CreateCabHTTP(String URL, String Key2);
 boolean ComproRespuestaHTTP();
-//void SystemLoop();
-void ConexionWifi();
 void InitDS18B20();
 void RefreshTemperature();
+void saveCircuitValue();
 
-
-
-
-
-/*************************************************************************** 
-  SUBRUTINAS TRATAMIENTO EEPROM
-  DETECTA EL fMICROCONTOLADOR DE LA TARJETA CONFIGURADA EN EL IDE ARDUINO 
-  CAMBIAMOS EL USO DE EEPROM INTERNO O EXTERNO 
-  ACTIVADO MODO USO EEPROM EXTERNA !!!! 
-****************************************************************************/
-#ifdef ARDUINO_MEGA
-//    ARDUINO MEGA..........................................................   
-    
-    #define EepromRead   EEPROM.read
-	
-    void EepromWrite ( unsigned int eeaddress, byte data ){
-      if(EepromRead(eeaddress) != data)
-      EEPROM.write(eeaddress, data);
-    }
-   
-#else
-//    ARDUINO CON Atmeg328 (ARDUINO UNO,ARDUINO ETHERNET. ETC.............
-///   USO DE MEMORIA EXTERNA.
-   
-      byte EepromRead( unsigned int eeaddress ) {
-		unsigned long startingTime = millis();
-		
-        byte rdata = 0xFF;
-        TWBR = 18;        //Change speed bus I2C. For 400KHz used 12
-        Wire.beginTransmission(IC24C32_I2C_ADDRESS);
-        Wire.write((int)(eeaddress >> 8)); // MSB
-        Wire.write((int)(eeaddress & 0xFF)); // LSB
-        Wire.endTransmission();
-        Wire.requestFrom(IC24C32_I2C_ADDRESS,1);
-        while(Wire.available() == 0){
-          if((millis() - startingTime) > 2){
-            Wire.begin();
-            break;
-          }
-        }
-        rdata = Wire.read();
-        TWBR = 72;
-        return rdata;
-      }
-    
-  void EepromWrite( unsigned int eeaddress, byte data ) {
-    
-    if(EepromRead(eeaddress) == data) return;       
-        Wire.beginTransmission(IC24C32_I2C_ADDRESS);
-        Wire.write((int)(eeaddress >> 8));       // MSB
-        Wire.write((int)(eeaddress & 0xFF));     // LSB
-        Wire.write(data);
-        Wire.endTransmission();
-		//Espera buffer este vacio o tiempo de salida.
-		//while(twi_state != 0 ){
-		//	if((millis() - startingTime) >= 5)
-		//	{
-		//		Wire.begin();
-		//		break;
-		//	}
-		//}
-		
-        delay(5);           // Retardo para asegurar escritura, dependiendo de la memoria 
-                            // puede ser inferior.
-        TWBR = 72;          // Speed bus I2C standard 100KHz.
-      }
-#endif
-
-/******************************************************************/
-//  FUNCIONES RELOJ
-/*****************************************************************/
-
-// Convert normal decimal numbers to binary coded decimal
-byte decToBcd(byte val)
-{
-  return ( (val/10*16) + (val%10) );
-}
-
-// Convert binary coded decimal to normal decimal numbers
-byte bcdToDec(byte val)
-{
-  return ( (val/16*10) + (val%16) );
-}
-
-// Stops the DS1307, but it has the side effect of setting seconds to 0
-// Probably only want to use this for testing
-/*void stopDs1307()
-{
-  Wire.beginTransmission(DS_RTC);
-  Wire.send(0);
-  Wire.send(0x80);
-  Wire.endTransmission();
-}*/
-
-// 1) Sets the date and time on the ds1307
-// 2) Starts the clock
-// 3) Sets hour mode to 24 hour clock
-// Assumes you're passing in valid numbers
-void setDateDs1307(byte second,        // 0-59
-                   byte minute,        // 0-59
-                   byte hour,          // 1-23
-                   byte dayOfWeek,     // 1-7
-                   byte dayOfMonth,    // 1-28/29/30/31
-                   byte month,         // 1-12
-                   byte year)          // 0-99
-{
-   Wire.beginTransmission(DS_RTC);
-   Wire.write(0);
-   Wire.write(decToBcd(second));    // 0 to bit 7 starts the clock
-   Wire.write(decToBcd(minute));
-   Wire.write(decToBcd(hour));      // If you want 12 hour am/pm you need to set
-                                   // bit 6 (also need to change readDateDs1307)
-   Wire.write(decToBcd(dayOfWeek));
-   Wire.write(decToBcd(dayOfMonth));
-   Wire.write(decToBcd(month));
-   Wire.write(decToBcd(year));
-   Wire.endTransmission();
-}
-
-// Gets the date and time from the ds1307
-void getDateDs1307(byte *second,
-          byte *minute,
-          byte *hour,
-          byte *dayOfWeek,
-          byte *dayOfMonth,
-          byte *month,
-          byte *year)
-{
-  // Reset the register pointer
-  Wire.beginTransmission(DS_RTC);
-  Wire.write(0);
-  Wire.endTransmission();
- 
-  Wire.requestFrom(DS_RTC, 7);
-
-  // A few of these need masks because certain bits are control bits
-  if (Wire.available()==7){
-    *second     = bcdToDec(Wire.read() & 0x7f);
-    *minute     = bcdToDec(Wire.read());
-    *hour       = bcdToDec(Wire.read() & 0x3f);  // Need to change this if 12 hour am/pm
-    *dayOfWeek  = bcdToDec(Wire.read());
-    *dayOfMonth = bcdToDec(Wire.read());
-    *month      = bcdToDec(Wire.read());
-    *year       = bcdToDec(Wire.read());
-  }
-}
-
-
-
-#ifdef WIFI_SHIELD
-void ConexionWifi() {
-    #ifdef DEBUG_MODE   
-        Serial.println("Iniciando Conexon Wifi");  
-    #endif
-    
-    if (Net_Type == OPEN){WiFi.begin(ssid);  }//Open Network
-    if (Net_Type == WEP){WiFi.begin(ssid, pass); }//WPA NETWORK
-    if (Net_Type == WPA){WiFi.begin(ssid, keyIndex, pass); }//WEP 
-    
-    #ifdef ENABLE_WATCH_DOG
-      wdt_disable();
-    #endif 
-    
-    delay(10000);  //Esperamos 10 segundos para conexion
-    #ifdef ENABLE_WATCH_DOG
-      wdt_enable(WDTO_8S); 
-    #endif 
-    
-    TimConexion=millis();
-}
-#endif
 
 #ifdef RETROAVISOS 
 void ComprobarRetroavisos(){   
@@ -232,11 +68,9 @@ void ComprobarRetroavisos(){
         if ((InputMillis-LastTimeEstadoRetroaviso[i])>=60){
           circuits[i].Out2_Value=reading;        
           if (reading==HIGH){
-            circuits[i].OldValue=1;
             circuits[i].Value=1;
           }
           else{
-            circuits[i].OldValue=0;
             circuits[i].Value=0;
           }
         }    
@@ -333,8 +167,6 @@ void GestionCircuitos(){
      #ifdef ELECTRIC_OUTLET_433
        if (circuits[c].Type==EnchufeRF){
            if (circuits[c].Value!=circuits[c].OldValue){
-             circuits[c].OldValue=circuits[c].Value;
-             
              if (circuits[c].Value==1)
                Electric_Outlet_Control(circuits[c].Device_Number+1,true);
              else
@@ -406,7 +238,14 @@ void InputState(){
        }
      }
   }
-} 
+}
+
+// Guarda el nuevo valor del circuito.
+void saveCircuitValue(){
+    for (int c=0;c<Number_Circuit;c++){
+      circuits[c].OldValue=circuits[c].Value;
+    }
+}
 /*************************************************************/
    //Gestion Persianas
 /*************************************************************/ 
@@ -551,7 +390,23 @@ void timeChangeCircuit(int addressEE)
 }
 
 
-
+//Modificado 2.3
+void SelectScene(byte Dir)
+{
+  int p;
+  byte c,v;
+  
+  p= (int) Dir;
+  p= EM_ESCENES_OFFSET + ((p-1) * S_ESCENES );
+  for (c =0 ; c<Number_Circuit; c++)
+  {
+    v =EepromRead(p + c); 
+    if (v < 250)
+    {
+      circuits[c].Value = v;
+    }
+  }
+}
 
 void CargaHora()
 {
@@ -991,6 +846,7 @@ void loop(){
    GestionCircuitos();
    OutControl();
    UserLoop();
+   saveCircuitValue();
 
 }
 

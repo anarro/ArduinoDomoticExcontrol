@@ -1,8 +1,17 @@
 
-#define HTTP_CONNET 
 
+#if defined (ETHERNET_SHIELD) || (WIFI_SHIELD)
+  #define HTTP
+#endif
+
+#ifndef HTTP
+  void connectAndRfr(){
+  }
+#else
 // Refresco Ip con el servidor, 
 #define TIME_REFRESH_IP 50
+
+static byte EspRfrIp=TIME_REFRESH_IP;
 
 boolean ComproRespuestaHTTP(){
   int Reintento=0;
@@ -76,21 +85,18 @@ boolean Notification(String Text){
 
 
 
-void connectAndRfr(){
-  static byte EspRfrIp=TIME_REFRESH_IP;
+void connectAndRfr(){  
   
   if ((Connecting) || (Mail=="")){
     return;
   }   
  
-  if (EspRfrIp-- ==  0){
- 
- 
-  
-  boolean result = CreateCabHTTP("GET http://excontrol.es/Users/IpSet.aspx?Mail=","");
-  if (result){ComproRespuestaHTTP(); }
+  if (EspRfrIp-- ==  0){  
+    boolean result = CreateCabHTTP("GET http://excontrol.es/Users/IpSet.aspx?Mail=","");
+    if (result){ComproRespuestaHTTP(); }
+  }
 }
-
+#endif
 
 
 

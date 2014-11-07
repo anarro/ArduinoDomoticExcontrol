@@ -3,6 +3,31 @@
 
 */
 
+//definir pines control SD
+#define SS_SD 4
+#define SS_UNO 10
+#define SS_ETHERNET 53 //53 for mega, for other  pin  10
+
+
+//Direccion de trabajo para modulos RTC.
+#define DS_RTC 0x68  //Direccion Reloj
+
+#ifdef moduleDS1307
+  #define IC24C32_I2C_ADDRESS 0x50
+#endif
+
+#ifdef moduleDS3231
+  #define IC24C32_I2C_ADDRESS 0x57
+#endif
+
+
+
+
+
+
+
+
+
 /*
 	#Numeración de tipos de circuitos.
 */
@@ -104,3 +129,8 @@
 #define EM_DATE_ESPECIAL2_OFSSET (EM_DATE_ESPECIAL1_END + 1)
 #define EM_DATE_ESPECIAL2_END	 (EM_DATE_ESPECIAL1_END + EM_DATE_ESPECIAL_SIZE)
 #define EM_END                   (EM_DATE_ESPECIAL2_END + 1)
+
+
+#define ISCIRCUIT_CHANGED(n)      (circuits[n].Value != circuits[n].OldValue )
+#define ISCIRCUIT_CHAN_LOW(n)     (circuits[n].Value <  circuits[n].OldValue )
+#define ISCIRCUIT_CHAN_HIGH(n)    (circuits[n].Value >  circuits[n].OldValue )
