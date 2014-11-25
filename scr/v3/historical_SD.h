@@ -10,8 +10,8 @@
  
 ***************************************************************************/
 
-
-#define HISTORICAL_SD
+#ifndef HISTORICAL_SD_h
+ #define HISTORICAL_SD_h
 
 // PROTOTIPOS EXTERNOS.
 extern char* ReadSensor(byte NumeroSensor);
@@ -208,3 +208,4 @@ String ReadFile(int Linea,char Ruta[]){
     }
     EnableEthernet();return"NOFOUND!!";
 }
+#endif

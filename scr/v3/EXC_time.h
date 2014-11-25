@@ -1,40 +1,47 @@
+#ifndef EXC_time
+  #define EXC_time
+
+
 /******************************************************************/
 //  FUNCIONES RELOJ
 /*****************************************************************/
-
+#if defined (moduleDS1307) || (moduleDS3231)
 // Convert normal decimal numbers to binary coded decimal
 byte decToBcd(byte val)
 {
   return ( (val/10*16) + (val%10) );
+
 }
 
 // Convert binary coded decimal to normal decimal numbers
 byte bcdToDec(byte val)
 {
   return ( (val/16*10) + (val%16) );
+
 }
 
 // Stops the DS1307, but it has the side effect of setting seconds to 0
 // Probably only want to use this for testing
-/*void stopDs1307()
+void startDs1307()
 {
-  Wire.beginTransmission(DS_RTC);
-  Wire.send(0);
-  Wire.send(0x80);
+  Wire.beginTransmission(DS_RTC);  
+  Wire.write(0);
+  Wire.write(0x00);
   Wire.endTransmission();
-}*/
+}
+
 
 // 1) Sets the date and time on the ds1307
 // 2) Starts the clock
 // 3) Sets hour mode to 24 hour clock
 // Assumes you're passing in valid numbers
-void setDateDs1307(byte second,        // 0-59
+void setDateDs1307()/*byte second,        // 0-59
                    byte minute,        // 0-59
                    byte hour,          // 1-23
                    byte dayOfWeek,     // 1-7
                    byte dayOfMonth,    // 1-28/29/30/31
                    byte month,         // 1-12
-                   byte year)          // 0-99
+                   byte year)          // 0-99*/
 {
    Wire.beginTransmission(DS_RTC);
    Wire.write(0);
@@ -50,13 +57,7 @@ void setDateDs1307(byte second,        // 0-59
 }
 
 // Gets the date and time from the ds1307
-void getDateDs1307(byte *second,
-          byte *minute,
-          byte *hour,
-          byte *dayOfWeek,
-          byte *dayOfMonth,
-          byte *month,
-          byte *year)
+void getDateDs1307()
 {
   // Reset the register pointer
   Wire.beginTransmission(DS_RTC);
@@ -67,16 +68,20 @@ void getDateDs1307(byte *second,
 
   // A few of these need masks because certain bits are control bits
   if (Wire.available()==7){
-    *second     = bcdToDec(Wire.read() & 0x7f);
-    *minute     = bcdToDec(Wire.read());
-    *hour       = bcdToDec(Wire.read() & 0x3f);  // Need to change this if 12 hour am/pm
-    *dayOfWeek  = bcdToDec(Wire.read());
-    *dayOfMonth = bcdToDec(Wire.read());
-    *month      = bcdToDec(Wire.read());
-    *year       = bcdToDec(Wire.read());
+    second     = bcdToDec(Wire.read() & 0x7f);
+    minute     = bcdToDec(Wire.read());
+    hour       = bcdToDec(Wire.read() & 0x3f);  // Need to change this if 12 hour am/pm
+    dayOfWeek  = bcdToDec(Wire.read());
+    dayOfMonth = bcdToDec(Wire.read());
+    month      = bcdToDec(Wire.read());
+    year       = bcdToDec(Wire.read());
   }
 }
+#else
+  void setDateDs1307(){}:
+  void getDateDS1307(){}:
 
+#endif
 
-
+#endif
 

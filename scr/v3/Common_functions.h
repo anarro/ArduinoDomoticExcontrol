@@ -1,18 +1,19 @@
+/*
+  Carga de modulos.
+*/
+
 
 #include "EXC_ram.h"
 #include "EXC_eeprom.h"
 #include "EXC_time.h"
-#include "EXC_udp.h"
-#include "EXC_http.h"
+
+//#include "printLCD.h"
 
 
 
-#ifdef Historical_SD
-  #include "historical_SD.h"
-#endif
+#include <Wire.h>
 
-//Aumentar tamaño buffer UDP
-#define UDP_TX_PACKET_MAX_SIZE 100 //increase UDP size
+
 
 //Funciones externas que son configurables por el usuario.
 extern void UserSetup();
@@ -32,23 +33,53 @@ extern char* RunCommand(byte CommandNumber);
 
 
 // PROTOTIPOS
-void CargaHora();
+// Circuitos
 void InputState();
 void CheckSwicth();
-void EnvioEstadoActual();
 void SelectScene(byte);
-void ActualizaMinuto();
-void SubirPersiana(byte NPersiana);
+
+// Persianas.
 void ReiniciarTiempoPersianas();
-void connectAndRfr();
-void RecepcionPaqueteUDP();
+void SubirPersiana(byte NPersiana);
 void BajarPersiana(byte);
 void CargaPosicionPersiana(byte NPersiana);
-boolean CreateCabHTTP(String URL, String Key2);
+
+//
+void RecepcionPaqueteUDP();
+//boolean CreateCabHTTP(String URL, String Key2);
 boolean ComproRespuestaHTTP();
+void connectAndRfr();
+void EnvioEstadoActual();
+
+
 void InitDS18B20();
 void RefreshTemperature();
+
+void ActualizaMinuto();
+void CargaHora();
 void saveCircuitValue();
+
+
+#ifdef Historical_SD
+  #include "historical_SD.h"
+#endif
+
+#ifdef IR_RECIVE   
+  #include "InfraRedFunction.h"
+#endif 
+
+#if defined (ETHERNET_SHIELD) || (WIFI_SHIELD)
+ #include "EXC_udp.h"
+ #include "EXC_http.h"
+#endif
+
+//#ifdef RECEIVER_433
+//  #include "Mhz433.h"
+//#endif
+
+//#ifdef THERMOSTAT_DS18B20_NUMBER
+//  #include "Mhz433.h"
+//#endif
 
 
 #ifdef RETROAVISOS 
@@ -410,7 +441,7 @@ void SelectScene(byte Dir)
 
 void CargaHora()
 {
-  getDateDs1307(&second, &minute, &hour, &dayOfWeek, &dayOfMonth, &month, &year);
+  getDateDs1307();  
   Tim30Sg=millis();
   if (minute != minutoMemory)
   {
@@ -440,14 +471,14 @@ void ActualizaMinuto()
     //y cuando se han las 2 de la noche adelanta el reloj una hora
     if(Enable_DaylightSavingTime==true && minute==0){
       if(month==3 && dayOfMonth >= 26 && dayOfWeek == 7 && hour==2){
-        hour = 3;
-        setDateDs1307(second, minute, hour, dayOfWeek, dayOfMonth, month, year);
+        hour = 3;     
+        setDateDs1307(/*second, minute, hour, dayOfWeek, dayOfMonth, month, year*/);
       }
       if(month==10 && dayOfMonth >= 26 && dayOfWeek == 7 && hour==2){
         if (HoraRetrasa==false){
           HoraRetrasa=true;
           hour = 1;          
-          setDateDs1307(second, minute, hour, dayOfWeek, dayOfMonth, month, year);
+          setDateDs1307(/*second, minute, hour, dayOfWeek, dayOfMonth, month, year*/);
         }
       }
       
@@ -545,28 +576,35 @@ void SetAlarm(int Number){if ((Number<=19)&&(Alarms[Number]==0)){Alarms[Number]=
 void ResetAlarm(int Number){if ((Number<=19)&&(Alarms[Number]==2)){Alarms[Number]=0;}}
 
 
-
+//Envento segundo
+//Se ejecutan una serie de funciones.
 void loopSecond(){
-  //Notifications.
-  
+  //Notifications.  
   //
-  connectAndRfr();
-  //
-
-  
+  #if defined (ETHERNET_SHIELD) || (WIFI_SHIELD)
+    connectAndRfr();
+  #endif
+  // 
+  LoopNewSecond();
 }
+
+//Evento 30 segundos
 void loop30Second(){
   CargaHora();
+
   #ifdef HISTORICAL_SD
     if (SdOk){
       SecutityCopy();
     }
   #endif 
+  Loop30Sg();
 
   
 }
-
+//Eventos Minuto.
 void loopMinute(){
+  
+  
   #ifdef HTTP_CONNET 
   if (Connecting==false){
     for (int a=0;a<=19;a++){
@@ -701,7 +739,8 @@ void setup()
   
   //Fijamos pines entrada salida
   unsigned long currenMillis = millis();
-  
+  //startDs1307();
+  //setDateDs1307(0,49,01,6,15,11,2014);
   #ifdef RETROAVISOS     
     for (int c=0;c<Retroavisos_Number;c++){
       pinMode(PinEstadoCircuito[c], INPUT);
@@ -827,7 +866,7 @@ void loop(){
       TimConexion=millis();
       RecepcionPaqueteUDP();
     }
-  #else
+  #elif defined ETHERNET_SHIELD
     RecepcionPaqueteUDP();
   #endif
   
@@ -835,15 +874,17 @@ void loop(){
   CheckSwicth();
    
    //Control de movimiento persianas
+   //Cambiar tiene que estar en gesitonCircuitos.
    for (int p =0; p<NumeroPersianas;p++){
      GestionMovPersianas(p);
    } 
-   
+   //Control de retroavisos
+   //En realidad es un objeto circuito.
    #ifdef RETROAVISOS 
     ComprobarRetroavisos(); 
    #endif   
    
-   GestionCircuitos();
+   GestionCircuitos(); 
    OutControl();
    UserLoop();
    saveCircuitValue();

@@ -25,7 +25,9 @@ byte Consignas[10];                     //Guarda el valor de las consignas
 boolean Connecting=false;
 
 //Varibles Reloj
-byte second, minute, hour, dayOfWeek, dayOfMonth, month, year,minutoMemory,TipoDia;
+
+byte second, minute, hour, dayOfWeek, dayOfMonth, month, year, minutoMemory, TipoDia;
+
 boolean HoraRetrasa;
 unsigned long Tim30Sg,TimSg,TimNow;
 
@@ -39,6 +41,8 @@ byte InState[Number_Input];  //Estado Entrada
 
 //Variables Control Alarmas
 byte Alarms[]={0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
+
+
 /////////////////////////////////////////////////////////////////////////////////////////////////////////
 //Configuracion Persianas
 /////////////////////////////////////////////////////////////////////////////////////////////////////////

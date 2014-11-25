@@ -3,6 +3,11 @@
 
 */
 
+
+
+
+
+
 //definir pines control SD
 #define SS_SD 4
 #define SS_UNO 10
@@ -107,13 +112,13 @@
 #define	EM_UP_TIM_SHUTTER_OFFSET (EM_CIRCUITS_END + 1)                                           //381
 #define	EM_UP_TIM_SHUTTER_END    (EM_CIRCUITS_END + (N_UP_TIM_SHUTTER * S_UP_TIM_SHUTTER))       //380 + (30 * 1) = 410
 #define	EM_DO_TIM_SHUTTER_OFFSET (EM_UP_TIM_SHUTTER_END + 1)                                     //411
-#define	EM_DO_TIM_SHUTTER_END    (EM_UP_TIM_SHUTTER_END + (N_DO_TIM_SHUTTER * S_DO_TIM_SHUTTER))// 410 + (30 * 1) = 440
-#define EM_ALARMS_OFSSET         (EM_DO_TIM_SHUTTER_END + 1)
-#define EM_ALARMS_END            (EM_DO_TIM_SHUTTER_END + (N_ALARMS * S_ALARMS))
+#define	EM_DO_TIM_SHUTTER_END    (EM_UP_TIM_SHUTTER_END + (N_DO_TIM_SHUTTER * S_DO_TIM_SHUTTER)) //410 + (30 * 1) = 440
+#define EM_ALARMS_OFSSET         (EM_DO_TIM_SHUTTER_END + 1)                                     //441
+#define EM_ALARMS_END            (EM_DO_TIM_SHUTTER_END + (N_ALARMS * S_ALARMS))                 //440 + (20 * 1) = 460
 #define EM_CONDITIONED_OFSSET    (EM_ALARMS_END + 1)
-#define EM_CONDITIONED_END       (EM_ALARMS_END + (N_CONDITIONED * S_CONDITIONED))
+#define EM_CONDITIONED_END       (EM_ALARMS_END + (N_CONDITIONED * S_CONDITIONED))               //460 + (10 * 1) = 470
 #define EM_SETPOINTS_OFSSET 	 (EM_CONDITIONED_END + 1)
-#define EM_SETPOINTS_END         (EM_CONDITIONED_END + (N_SETPOINTS * S_SETPOINTS))
+#define EM_SETPOINTS_END         (EM_CONDITIONED_END + (N_SETPOINTS * S_SETPOINTS))              //470 + (10 + 1) = 480
 
 // USO de RTC
 #define	EM_TRIGGER_OFFSET        (EM_SETPOINTS_END + 1)
@@ -134,3 +139,5 @@
 #define ISCIRCUIT_CHANGED(n)      (circuits[n].Value != circuits[n].OldValue )
 #define ISCIRCUIT_CHAN_LOW(n)     (circuits[n].Value <  circuits[n].OldValue )
 #define ISCIRCUIT_CHAN_HIGH(n)    (circuits[n].Value >  circuits[n].OldValue )
+
+

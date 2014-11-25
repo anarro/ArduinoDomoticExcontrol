@@ -15,8 +15,9 @@ DONWLOAD LIBRARY...DESCARGA
 https://github.com/shirriff/Arduino-IRremote
 ************************************************************************************************/
 /************************************************************************************************/
-#ifdef IR_RECIVE
 
+
+#ifdef IR_RECIVE
 
 void ComprobarInfrarro() {
   
@@ -98,7 +99,6 @@ void ComprobarInfrarro() {
      
    }
 }
-
 #endif 
 
 /***********************************************************************************
@@ -112,7 +112,6 @@ https://github.com/shirriff/Arduino-IRremote
 ************************************************************************************************/
 
 #ifdef LED_IR
-
 void SendIr(byte CommandNumber){
   //Example  lg tv
   //Ejemplo uso tv lg
@@ -230,9 +229,9 @@ void SendIr(byte CommandNumber){
       delay(40);
       break;   
      }   
- #ifdef IR_RECIVE
-   irrecv.enableIRIn(); // Re-enable receiver
- #endif 
+   #ifdef IR_RECIVE
+     irrecv.enableIRIn(); // Re-enable receiver
+   #endif 
 }
 #endif 
 

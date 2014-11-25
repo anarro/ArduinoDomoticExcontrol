@@ -1,4 +1,9 @@
 
+#include "EXC_time.h"
+
+//Aumentar tamaño buffer UDP
+#define UDP_TX_PACKET_MAX_SIZE 100 //increase UDP size
+
 #if defined (ETHERNET_SHIELD) || (WIFI_SHIELD)
   #define UDP
 #endif
@@ -268,8 +273,17 @@ void RecepcionPaqueteUDP(){
       strcpy(packetBuffer, "DIAS ESPECIALES BORRADOS");     
     }
     else if (strncmp(packetBuffer, "SETFH", 5)==0){
-       setDateDs1307(packetBuffer[5] ,packetBuffer[6], packetBuffer[7], packetBuffer[8], packetBuffer[9], packetBuffer[10], packetBuffer[11]);
-       CargaHora();
+      /*second, minute, hour, dayOfWeek, dayOfMonth, month, year*/
+      second=packetBuffer[5];
+      minute=packetBuffer[6];
+      hour=packetBuffer[7];
+      dayOfWeek=packetBuffer[8];
+      dayOfMonth=packetBuffer[9];
+      month=packetBuffer[10];
+      year=packetBuffer[11];
+      setDateDs1307();
+   //    setDateDs1307(packetBuffer[5] ,packetBuffer[6], packetBuffer[7], packetBuffer[8], packetBuffer[9], packetBuffer[10], packetBuffer[11]);
+   //    CargaHora();
       strcpy(packetBuffer, "SETFHOK");
     }
     else if (strncmp(packetBuffer, "GETSENSOR", 9)==0){          

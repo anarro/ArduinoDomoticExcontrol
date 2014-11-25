@@ -1,7 +1,7 @@
 
 /**
  \ Arduino_Sistema_Domotico.ino
- \ http://excontrol.es/Domotica-Arduino/ExControl 
+ \ http://domotica-arduino.es/foro/
  ****************************************************************************
  ///  BASADO EN LA VERSIÓN 2.
  *  Este archivo es una modificación para poder se utilizado con Arduinos
@@ -25,6 +25,8 @@
  
  #include   "EXC_def.h"
  #include <SPI.h>
+ #include <EEPROM.h>
+ 
  
  
 /**************************************************************************
@@ -32,24 +34,20 @@
 ***************************************************************************/
 
 //#define ENABLE_WATCH_DOG;
-//#define DEBUG_MODE
-
-
-
-
-
-
+ #define DEBUG_MODE
 
 
 /**************************************************************************
-  #Librerias estandar shield ETHERNET. UNO Y MEGA.
+  #Librerias shield ETHERNET. UNO Y MEGA.
 ***************************************************************************/
 
-
-//#define ETHERNET_SHIELD
+#define ETHERNET_SHIELD
 #include <Ethernet.h>
 #include <EthernetUdp.h>  
 
+/**************************************************************************
+  #Librerias shield WIFI. UNO Y MEGA.
+***************************************************************************/
 
 
 //#define WIFI_SHIELD;
@@ -57,12 +55,10 @@
 //#include <WiFiUdp.h>
 
 
-
-//  #include <EEPROM.h>
-
 //  Descomentar para incluir uso de SD, con historicos.
 //  #define Historical_SD 
 //  #include <SD.h>
+
 
 /**************************************************************************
   #     OBLIGATORIO UNO, NANO ATMEGA 328 
@@ -113,25 +109,33 @@
  #ifndef LED_IR
     #include <IRremote.h>
   #endif
-  IRrecv irrecv(19);//El 19 corresponde con el pin de arduino, cambiar para utilizar otro
+  IRrecv irrecv(19);            //Pin 19 Entrada receptor Infrarojo Arduino con Atmega 328 utilizar.....
   decode_results results;
 #endif 
+
+
 
 #ifdef THERMOSTAT_DS18B20_NUMBER 
   #include <OneWire.h>
   #include <DallasTemperature.h>
-  #define TEMPERATURE_PRECISION 9
-  #define ONE_WIRE_BUS 3           //Pin one wire donde estan conectadas las sondas
-  DeviceAddress Ds18B20Addres[THERMOSTAT_DS18B20_NUMBER] ={{0x28,0xAB,0x2A,0x46,0x04,0x00,0x00,0x88}};
-  OneWire oneWire(ONE_WIRE_BUS);  // Setup a oneWire instance to communicate with any OneWire devices (not just Maxim/Dallas temperature ICs)
-  DallasTemperature sensorTemp(&oneWire);// Pass our oneWire reference to Dallas Temperature.   
-  boolean ThermostatCool[THERMOSTAT_DS18B20_NUMBER];
+  #define TEMPERATURE_PRECISION 9  // Precision de lectura 
+  #define ONE_WIRE_BUS 3           //Pin  donde estan conectadas las sondas
+  DeviceAddress Ds18B20Addres[THERMOSTAT_DS18B20_NUMBER] ={
+                  {0x28,0xAB,0x2A,0x46,0x04,0x00,0x00,0x88}    // Dirección de su sonda DS18B20 nº 1. 
+               //,{0x28,0xAB,0x2A,0x46,0x04,0x00,0x00,0x89}    // Dirección de su sonda DS18B20 nº 2. Descomentar para usar.
+                                                               // Copiar linea anterior si instala mas sondas.
+                  };
+  OneWire oneWire(ONE_WIRE_BUS);               // Setup a oneWire instance to communicate with any OneWire devices (not just Maxim/Dallas temperature ICs)
+  DallasTemperature sensorTemp(&oneWire);      // Pass our oneWire reference to Dallas Temperature.   
+  boolean ThermostatCool[THERMOSTAT_DS18B20_NUMBER];    // Array de 
   boolean ThermostatHeat[THERMOSTAT_DS18B20_NUMBER];
-  float Temperature[]={20};
+  float Temperature[THERMOSTAT_DS18B20_NUMBER]={20};    // Array de memoria donde se almacena los valores leidos.
 #endif 
 
 
-
+#include <LiquidCrystal_I2C.h>
+#define BACKLIGHT_PIN     13
+LiquidCrystal_I2C lcd(0x38);  // Set the LCD I2C address
 
 
 //Activa o desactiva cambio hora automatico invierno verano
@@ -166,22 +170,22 @@ const boolean Enable_DaylightSavingTime  = true;
 
 //Entradas con conmutador
 //Swicth Inputs
-byte PinSwicthInput[]={5};
+const byte PinSwicthInput[]={5};
 
 //Define pines de Entradas
 //Inputs pin
-byte PinInput[]={2,3,4};
+const byte PinInput[]={2,3,4};
 
 //Define pines de Salidas
 //Outputs pin
-byte PinOutput[]={6,7,8,14,15};
+const byte PinOutput[]={6,7,8,14,15};
 
 //Numero de Persianas
 //Number of blind
 const byte NumeroPersianas = 1;
 
 // Circuitos 
-const byte Circuit_Type[] ={Ado_3Etapas, Ado_Digital ,Persiana };
+const byte Circuit_Type[] ={Ado_3Etapas, Ado_Digital , Persiana};
 
 
 
@@ -218,11 +222,11 @@ const byte Circuit_Type[] ={Ado_3Etapas, Ado_Digital ,Persiana };
   Net_Security Net_Type = WEP;
   char ssid[] = "YOUR-SSID"; //  your network SSID (name) 
   char pass[] = "YOUR-PASSWORD";    // your network password (use for WPA, or use as key for WEP)
-  int keyIndex = 0;            // your network key Index number (needed only for WEP)
-  
+  byte mac[] = {0x90, 0xA2, 0xDA, 0x0F, 0x26, 0x20};
+  IPAddress ip(192,168,2,49);
+  int keyIndex = 0;            // your network key Index number (needed only for WEP)  
   unsigned int TimConexion;
   int status = WL_IDLE_STATUS;     // the Wifi radio's status
-//  char packetBuffer[UDP_TX_PACKET_MAX_SIZE]; 
   WiFiClient client;
   WiFiUDP Udp;
 #endif
@@ -250,19 +254,43 @@ void UserSetup() {
 }
 
 void UserLoop(){
-
+  float test = -323.5;
+  static byte oldSecond;
+  char buf[10];
+ 
+   if(!(millis() % 6000)){
+//     writeLCD(1, "HABITA %f%% S=%3\n",134.5,35);
+//     writeLCD(1,"%D  %H:%M:%S  \n");
+   }
+   else if (!(millis() %3000)){
+//     writeLCD(1,"%s \n","HOLA");
+//     writeLCD(1, "%D %2/%2/%2 %H:%M\n",dayOfMonth, month, year);
+   
+   }
+   else if (!(millis() %1000)){
+   //  writeLCD(1, "%s \n","LINEA");
+//     writeLCD(1, "%D %2/%2/%2 %H:%M\n",dayOfMonth, month, year);
+     Serial.print("float=");
+     Serial.println(test);
+    // Serial.println(sftoaR(test, buf ,6));
+     Serial.println(dayOfWeek);
+   }
 
 }
 
+//Este evento se produce cada segundo.
+//This event occurs every second.
 void LoopNewSecond(){
-  //Este evento se produce cada segundo.
-  //This event occurs every second.
+  
 
+ //  writeLCD( "%c\n",'c');
+ //  Serial.println(ftoaR(123.35,buffer,4));
 }
 
+//Este evento se produce cada 30sg.
+//This event occurs every 30SG.
 void Loop30Sg(){
-  //Este evento se produce cada 30sg.
-  //This event occurs every 30SG.
+
 
 }
 
@@ -470,6 +498,8 @@ void CommonOrders(byte CommandNumber){
     Serial.println(CommandNumber);Serial.println(CommandNumber);             
   #endif
 }
+
+
 char* ReadSensor(byte NumeroSensor)
 {
   //Monitor sensores
@@ -478,7 +508,8 @@ char* ReadSensor(byte NumeroSensor)
   //The number represents sensor parameter corresponds to the sensor set in the app
   if (NumeroSensor==100){
     char val[10];    
-    //dtostrf(Temperature[0],4,2,val);
+   //dtostrf(Temperatura[0],4,2,val);
+   //Serial.print(val);
     return val;
   }
 
