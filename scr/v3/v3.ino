@@ -35,15 +35,15 @@
 
 //#define ENABLE_WATCH_DOG;
  #define DEBUG_MODE
-
+#define LCDINSERIAL
 
 /**************************************************************************
   #Librerias shield ETHERNET. UNO Y MEGA.
 ***************************************************************************/
 
-#define ETHERNET_SHIELD
-#include <Ethernet.h>
-#include <EthernetUdp.h>  
+//#define ETHERNET_SHIELD
+//#include <Ethernet.h>
+//#include <EthernetUdp.h>  
 
 /**************************************************************************
   #Librerias shield WIFI. UNO Y MEGA.
@@ -254,26 +254,22 @@ void UserSetup() {
 }
 
 void UserLoop(){
-  float test = -323.5;
+  float test = -23.5;
   static byte oldSecond;
   char buf[10];
  
    if(!(millis() % 6000)){
-//     writeLCD(1, "HABITA %f%% S=%3\n",134.5,35);
-//     writeLCD(1,"%D  %H:%M:%S  \n");
+     writeLCD(1, "HABITA %f%% S=%3\n",test,35);
+     writeLCD(1,"%D  %H:%M:%S  \n");
    }
    else if (!(millis() %3000)){
-//     writeLCD(1,"%s \n","HOLA");
-//     writeLCD(1, "%D %2/%2/%2 %H:%M\n",dayOfMonth, month, year);
+     writeLCD(1,"%s \n","HOLA");
+     writeLCD(1, "%D %2/%2/%2 %H:%M\n",dayOfMonth, month, year);
    
    }
    else if (!(millis() %1000)){
-   //  writeLCD(1, "%s \n","LINEA");
-//     writeLCD(1, "%D %2/%2/%2 %H:%M\n",dayOfMonth, month, year);
-     Serial.print("float=");
-     Serial.println(test);
-    // Serial.println(sftoaR(test, buf ,6));
-     Serial.println(dayOfWeek);
+     writeLCD(1, "%s \n","LINEA");
+     writeLCD(1, "%D %2/%2/%2 %H:%M\n",dayOfMonth, month, year);  
    }
 
 }

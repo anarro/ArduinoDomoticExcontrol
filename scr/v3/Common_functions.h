@@ -6,8 +6,7 @@
 #include "EXC_ram.h"
 #include "EXC_eeprom.h"
 #include "EXC_time.h"
-
-//#include "printLCD.h"
+#include "printLCD.h"
 
 
 

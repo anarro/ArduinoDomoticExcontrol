@@ -58,7 +58,11 @@ PROGMEM const char *string_table[] = 	   // change "string_table" name to suit
 */
 int owrite(const char *str)
 {
-    Serial.print(str);    
+    lcd.print(str);
+    
+  #ifdef LCDINSERIAL
+    Serial.print(str);
+  #endif    
 }
 
 
@@ -227,7 +231,7 @@ void writeLCD(const unsigned char line,const char *fmt, ...)
 				owrite(i);
 			case 'f':
 				f = va_arg(ap, double);
-				ftoaR((float)f, i, 5);
+				sftoaR((float)f, i, 5);
 				owrite(i);
 				break;
 			case '%':                             	
