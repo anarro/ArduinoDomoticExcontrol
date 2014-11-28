@@ -12,6 +12,7 @@
   %f dato tipo float        float      4 posiciones justificado derecha.
                                          Valores en decimal de -9.9 a 99.9
                                          Valor entero -999 a 9999
+                                         Valores inferiores o superiores ----
   %d dato decimal           int/byte   4 posiciones justificado derecha.
   %4 dato decimal           int/byte   4 posiciones justificado derecha.
   %3 dato decimal           int/byte   3 posiciones justificado derecha.
