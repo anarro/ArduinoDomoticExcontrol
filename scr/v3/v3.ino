@@ -254,24 +254,30 @@ void UserSetup() {
 }
 
 void UserLoop(){
-  float test = -23.5;
-  static byte oldSecond;
-  char buf[10];
- 
-   if(!(millis() % 6000)){
-     writeLCD(1, "HABITA %f%% S=%3\n",test,35);
-     writeLCD(1,"%D  %H:%M:%S  \n");
+  float test = 999.9;
+  float t2 = 25;
+  static unsigned long time_changed_screen;
+  static byte number_screen;
+  #define numbers_screens 2
+  
+   if(abs(millis() - time_changed_screen ) > 2000){
+     time_changed_screen = millis();
+     
+     if( number_screen > numbers_screens){
+       number_screen = 0;
+     }
+     
+     if ( number_screen == 0 ){
+       writeLCD(1, "Line 1 %f %f\n",test,t2);
+       writeLCD(1,"%D  %H:%M:%S  \n");
+     }
+     if ( number_screen == 1 ){
+       writeLCD(1, "Line 2 %f %f\n",test,t2);
+       writeLCD(1," %H:%M:%S  %D\n");
+     }
+     number_screen++;   
    }
-   else if (!(millis() %3000)){
-     writeLCD(1,"%s \n","HOLA");
-     writeLCD(1, "%D %2/%2/%2 %H:%M\n",dayOfMonth, month, year);
-   
-   }
-   else if (!(millis() %1000)){
-     writeLCD(1, "%s \n","LINEA");
-     writeLCD(1, "%D %2/%2/%2 %H:%M\n",dayOfMonth, month, year);  
-   }
-
+   delay(900);
 }
 
 //Este evento se produce cada segundo.
