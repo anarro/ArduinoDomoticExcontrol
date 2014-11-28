@@ -9,7 +9,9 @@
   writeLCD( "%D %2/%2/%2 %H:%M:%S ",dayOfMonth, month, year);
   
   COMANDO                   ENTRADA    SALIDA
-  %f dato tipo float        float      4 posiciones un decimal justificado derecha.
+  %f dato tipo float        float      4 posiciones justificado derecha.
+                                         Valores en decimal de -9.9 a 99.9
+                                         Valor entero -999 a 9999
   %d dato decimal           int/byte   4 posiciones justificado derecha.
   %4 dato decimal           int/byte   4 posiciones justificado derecha.
   %3 dato decimal           int/byte   3 posiciones justificado derecha.
@@ -118,57 +120,44 @@ char *itoaR(int val, char *result, signed char len)
  \param len longitud de la cadena
  \return verdadero si ha sucedido.
 */
-
 char *sftoaR(float val, char *result, signed char len)
 {
     float v;
-    int i;
+    signed int i;
     boolean neg = false;
-    
-    v= val * 10;			// Ejemplo entrada 32.5 v=325
-    i = v;                              // Pasamos float a un entero 325
-    
-    if(v < 0){                          // Si es negativo 
-      neg=true;
-      i = - i;
-    }   				
-	
     result[len--] = 0;            	//null termination.
-    result[len--] = ((i%10)+48); 	//Decimal a array.
-    result[len--] = '.';		//Coma decimal.
-    i /= 10;                            //Borramos unidades.
-    pdec(i, result, len);
+    
+
+    if(val > 100){
+      i= val;
+      pdec(i, result, len);
+    }
+    else if(val < -10){      
+      i = val;                           
+      i=-i;
+      neg=true;
+      pdec(i, result, len);
+    }
+    else{      
+      v= val * 10;			// Ejemplo entrada 32.5 v=325
+      i = v;                            // Pasamos float a un entero 325
+      
+      if(i < 0){                        // Si es negativo 
+        neg=true;
+        i = - i;
+      }
+      
+      result[len--] = ((i%10)+48); 	//Decimal a array.
+      result[len--] = '.';		//Coma decimal.
+      i /= 10;                          //Borramos unidades.
+      pdec(i, result, len);
+    }
+    
     if(neg)
       result[0]='-';
     
     return result;
 }
-
-//{{ ftoaR(): float to string right justified.
-/* Transforma float en cadena justificado derecha   
- \param val entero valor.
- \param result cadena donde se va a escribir.
- \param len longitud de la cadena
- \return verdadero si ha sucedido.
-*/
-
-char *ftoaR(float val, char *result, signed char len)
-{
-    float v;
-    int i;
-    
-    v= val * 10;			// Ejemplo entrada 32.5 v=325						
-    i = v;					// Pasamos float a un entero 325
-
-    result[len--] = 0;            	//null termination.
-    result[len--] = ((i%10)+48); 	//Decimal a array.
-    result[len--] = '.';		//Coma decimal.
-    i /= 10;                            //Borramos unidades.
-    pdec(i, result, len);
-    
-    return result;
-}
-
 
 // {{{ writeLCD(): personalized printf for LCD
 void writeLCD(const unsigned char line,const char *fmt, ...) 
@@ -231,8 +220,13 @@ void writeLCD(const unsigned char line,const char *fmt, ...)
 				owrite(i);
 			case 'f':
 				f = va_arg(ap, double);
-				sftoaR((float)f, i, 5);
-				owrite(i);
+                                if(f > 10000 || f < -999.9){
+                                  owrite("----");
+                                }
+                                else{
+                                  sftoaR((float)f, i, 4);
+                                  owrite(i);
+                                }
 				break;
 			case '%':                             	
 				owrite("%");
