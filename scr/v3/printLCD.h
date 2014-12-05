@@ -3,7 +3,7 @@
 /*********************************************************************
   Printf personalizado para la escritura en pantalla LCD.
 
-  Los datos de entrada se deben colocar despues de " deben empezar con ,
+  Los datos de entrada se deben colocar despues de " deben empezar con coma.
   
   writeLCD( "TEMPERATURA %fC %d",variable float, variable int);
   writeLCD( "%D %2/%2/%2 %H:%M:%S ",dayOfMonth, month, year);
@@ -33,6 +33,69 @@
 
 #include <avr/pgmspace.h>
 
+const byte termometer[8] = //icon0 termometro
+{
+    B00100,
+    B01010,
+    B01010,
+    B01110,
+    B01110,
+    B11111,
+    B11111,
+    B01110
+};
+
+const byte humidity[8] = //icono humedad
+{
+    B00100,
+    B00100,
+    B01010,
+    B01010,
+    B10001,
+    B10001,
+    B10001,
+    B01110,
+};
+
+const byte centigrade [8] = 
+{    
+    0b11000,
+    0b11000,
+    0b00000,
+    0b00011,
+    0b00100,
+    0b00100,
+    0b00100,
+    0b00011
+};
+
+const byte bulbOn [8] = 
+{
+    0b01110,
+    0b11111,
+    0b11111,
+    0b11111,
+    0b01010,
+    0b01110,
+    0b01110,
+    0b00100
+};
+
+const byte bulbOff [8] = 
+{  
+    0b01110,
+    0b10001,
+    0b10001,
+    0b10001,
+    0b01010,
+    0b01110,
+    0b01110,
+    0b00100
+};
+
+// lcd.print((char)223); //signo grados 
+
+
 prog_char string_0[] PROGMEM = "LUN";   // "String 0" etc are strings to store - change to suit.
 prog_char string_1[] PROGMEM = "MAR";
 prog_char string_2[] PROGMEM = "MIE";
@@ -52,6 +115,28 @@ PROGMEM const char *string_table[] = 	   // change "string_table" name to suit
   string_4,
   string_5,
   string_6 };
+
+  
+//{{{ loadCharacters():
+/*Create a news customs characters.
+ \param  None.
+ \
+ \out    Salida en pantalla.
+*/
+void loadCharsLCD()
+{
+  lcd.createChar(0, centigrade);
+  lcd.createChar(1, bulbOn);
+  lcd.createChar(2, bulbOff);  
+  lcd.createChar(3, termometer);
+  lcd.createChar(4, humidity);
+}
+
+#define lcdPrintCentigrade   lcd.print((uint8_t)0)
+#define lcdPrintBulbOn       lcd.print((uint8_t)1)
+#define lcdPrintBulbOff      lcd.print((uint8_t)2)
+#define lcdPrintTermometer   lcd.print((uint8_t)3)
+#define lcdPrintHumidity     lcd.print((uint8_t)4)
 
 
 //{{{ owrite(): Imprime  cadena.
@@ -231,6 +316,12 @@ void writeLCD(const unsigned char line,const char *fmt, ...)
 				break;
 			case '%':                             	
 				owrite("%");
+				break;
+			case 'b':
+                                if (va_arg(ap, int))
+                                  lcdPrintBulbOn;
+                                 else
+                                  lcdPrintBulbOff;	
 				break;
 			}
 			*fmt++;
