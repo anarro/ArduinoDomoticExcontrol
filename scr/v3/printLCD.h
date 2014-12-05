@@ -32,26 +32,30 @@
 ********************************************************************/  
 
 #include <avr/pgmspace.h>
-uint8_t EXC[8] = {
-	0b01010,
-	0b01010,
-	0b11111,
-	0b11111,
-	0b01110,
-	0b01110,
-	0b00100,
-	0b00010
+uint8_t EXC[8] = 
+{
+    0b01010,
+    0b01010,
+    0b11111,
+    0b11111,
+    0b01110,
+    0b01110,
+    0b00100,
+    0b00010
 };
-uint8_t key[8] = {
-	0b01110,
-	0b10001,
-	0b10001,
-	0b01110,
-	0b00100,
-	0b00100,
-	0b00110,
-	0b00111
+
+uint8_t key[8] = 
+{
+    0b01110,
+    0b10001,
+    0b10001,
+    0b01110,
+    0b00100,
+    0b00100,
+    0b00110,
+    0b00111
 };
+
 uint8_t termometer[8] = //icon0 termometro
 {
     B00100,
@@ -125,16 +129,19 @@ void loadCharsLCD()
   lcd.createChar(2, bulbOff);  
   lcd.createChar(3, termometer);
   lcd.createChar(4, humidity);
+  lcd.createChar(5, EXC);
 }
 // Macros, Using expressions
 /*
 
 */
+
 #define lcdPrintCentigrade   lcd.write((uint8_t)0)
 #define lcdPrintBulbOn       lcd.write((uint8_t)1)
 #define lcdPrintBulbOff      lcd.write((uint8_t)2)
 #define lcdPrintTermometer   lcd.write((uint8_t)3)
 #define lcdPrintHumidity     lcd.write((uint8_t)4)
+#define lcdPrintEXC          lcd.write((uint8_t)5) 
 
 // lcd.print((char)223); //signo grados 
 
