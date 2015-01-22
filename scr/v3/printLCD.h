@@ -1,4 +1,27 @@
+/*********************************************************************
+ @description   
+   This version only offers minimal wrapping of print lcd. 
+ @version 
+   0.0.1
+	
+	Copyright (C) 2015 Francisco Cosmo "@cosmopaco"
 
+	This program is licensed to you under the Apache License Version 2.0,
+    and you may not use this file except in compliance with the Apache License Version 2.0.
+	
+	You may obtain a copy of the License at
+
+		http://www.apache.org/licenses/LICENSE-2.0
+
+	Unless required by applicable law or agreed to in writing, software
+	distributed under the License is distributed on an "AS IS" BASIS,
+	WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+	See the License for the specific language governing permissions and
+	limitations under the License.
+
+	Originally developed by Francisco Cosmo @cosmopaco 
+	
+********************************************************************/  
 
 /*********************************************************************
   Printf personalizado para la escritura en pantalla LCD.
