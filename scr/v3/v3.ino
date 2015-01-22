@@ -250,7 +250,7 @@ const byte Circuit_Type[] ={Ado_3Etapas, Ado_Digital , Persiana};
 
 /******************************************************************************************************************************/
 void UserSetup() { 
-
+  loadCharsLCD();
 }
 
 void UserLoop(){
@@ -272,8 +272,9 @@ void UserLoop(){
        writeLCD(1,"%D  %H:%M:%S  \n");
      }
      if ( number_screen == 1 ){
-       writeLCD(1, "Line 2 %f %f\n",test,t2);
-       writeLCD(1," %H:%M:%S  %D\n");
+//       writeLCD(1, "Line 2 %f %f\n",test,t2);
+//       writeLCD(1,"%H:%M:%S  %D\n");
+       writeLCD(1," %s \n",GetAlarmsName(1));
      }
      number_screen++;   
    }
@@ -283,10 +284,7 @@ void UserLoop(){
 //Este evento se produce cada segundo.
 //This event occurs every second.
 void LoopNewSecond(){
-  
 
- //  writeLCD( "%c\n",'c');
- //  Serial.println(ftoaR(123.35,buffer,4));
 }
 
 //Este evento se produce cada 30sg.
@@ -295,10 +293,10 @@ void Loop30Sg(){
 
 
 }
-
+//Este evento se produce cada cada minuto.
+//This event occurs every minute.
 void NewMinute(){
-  //Este evento se produce cada cada minuto.
-  //This event occurs every minute.
+
   #ifdef DEBUG_MODE       
     Serial.println("New Minute");   
   #endif
