@@ -5,7 +5,7 @@
 /******************************************************************/
 //  FUNCIONES RELOJ
 /*****************************************************************/
-#if defined (moduleDS1307) || (moduleDS3231)
+#if defined (moduleDS1307) || defined (moduleDS3231)
 // Convert normal decimal numbers to binary coded decimal
 byte decToBcd(byte val)
 {
