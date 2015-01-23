@@ -1,6 +1,6 @@
 
 
-#if defined (ETHERNET_SHIELD) || (WIFI_SHIELD)
+#if defined (ETHERNET_SHIELD) || defined (WIFI_SHIELD)
   #define HTTP
 #endif
 
@@ -20,7 +20,7 @@ boolean ComproRespuestaHTTP(){
       int c;
       for (c=0;c<5;c++){char c = client.read();}
       #ifdef DEBUG_MODE   
-        Serial.println("Coneccting completed");               
+        Serial.println("Connecting completed");               
       #endif
       client.stop();
       client.flush();
@@ -33,7 +33,7 @@ boolean ComproRespuestaHTTP(){
       delay(10);
       if (Reintento >= 700 ){
         #ifdef DEBUG_MODE   
-          Serial.println("Coneccting HTTP ERROR");               
+          Serial.println("Connecting HTTP ERROR");               
         #endif
         client.stop();
         client.flush();
