@@ -67,7 +67,7 @@ void saveCircuitValue();
   #include "InfraRedFunction.h"
 #endif 
 
-#if defined (ETHERNET_SHIELD) || (WIFI_SHIELD)
+#if defined (ETHERNET_SHIELD) || defined (WIFI_SHIELD)
  #include "EXC_udp.h"
  #include "EXC_http.h"
 #endif
