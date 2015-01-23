@@ -47,7 +47,7 @@ boolean ComproRespuestaHTTP(){
 
 boolean CreateCabHTTP(String URL, String Key2){
   #ifdef DEBUG_MODE   
-    Serial.println("Coneccting http server");               
+    Serial.println("Connecting http server");               
   #endif
   if (client.connect("www.excontrol.es", 80)) {
     client.print(URL);
@@ -58,12 +58,12 @@ boolean CreateCabHTTP(String URL, String Key2){
     Connecting=true;
     
     #ifdef DEBUG_MODE   
-    Serial.println("Conected");               
+    Serial.println("Connected");               
     #endif
     return true;
   }
    #ifdef DEBUG_MODE   
-    Serial.println("Coneccting error");               
+    Serial.println("Connecting error");               
     #endif
   Connecting=false;
   return false;
