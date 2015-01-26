@@ -473,10 +473,10 @@ void ActualizaMinuto()
         hour = 3;     
         setDateDs1307(/*second, minute, hour, dayOfWeek, dayOfMonth, month, year*/);
       }
-      if(month==10 && dayOfMonth >= 26 && dayOfWeek == 7 && hour==2){
+      if(month==10 && dayOfMonth >= 26 && dayOfWeek == 7 && hour==3){
         if (HoraRetrasa==false){
           HoraRetrasa=true;
-          hour = 1;          
+          hour = 2;
           setDateDs1307(/*second, minute, hour, dayOfWeek, dayOfMonth, month, year*/);
         }
       }
