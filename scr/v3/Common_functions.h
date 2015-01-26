@@ -479,10 +479,14 @@ void ActualizaMinuto()
           hour = 2;
           setDateDs1307(/*second, minute, hour, dayOfWeek, dayOfMonth, month, year*/);
         }
+        else{
+          HoraRetrasa=false;
+        }
+        }
+        
       }
       
     }
-    if (hour==3){HoraRetrasa=false;}      
 
     
     minutoMemory=minute;
